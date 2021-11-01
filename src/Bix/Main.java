@@ -1,3 +1,5 @@
+package Bix;
+
 import java.util.Scanner;
 
 class Main{
