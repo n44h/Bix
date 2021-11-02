@@ -25,7 +25,7 @@ class Krypto {
 
     // SHA256 Hashing
     /*-----------------------------------------------------------------------------------------*/
-    protected String getSHA256(String input) throws NoSuchAlgorithmException
+    protected static String getSHA256(String input) throws NoSuchAlgorithmException
     {
         // Static getInstance method is called with hashing SHA
         MessageDigest md = MessageDigest.getInstance("SHA-256");
@@ -36,7 +36,7 @@ class Krypto {
         return toHexString(md.digest(input.getBytes(StandardCharsets.UTF_8)));
     } // getSHA256()
 
-    protected String toHexString(byte[] hash)
+    protected static String toHexString(byte[] hash)
     {
         // Convert byte array into signum representation
         BigInteger number = new BigInteger(1, hash);
@@ -53,7 +53,7 @@ class Krypto {
 
     // AES Encryption
     /*-----------------------------------------------------------------------------------------*/
-    protected String encrypt(String plaintext, String password, int algorithm){
+    protected static String encrypt(String plaintext, String password, int algorithm){
         // returns the output as comma separated values
         // like this: "CIPHERTEXT,SALT,IV,KEYHASH"
 
@@ -86,14 +86,14 @@ class Krypto {
 
     } // encryptAES()
 
-    private byte[] generateSalt(){
+    private static byte[] generateSalt(){
         byte[] salt = new byte[16];
         RANDOM.nextBytes(salt);
         return salt;
 
     } // getSalt()
 
-    private SecretKey getSecretKey(String password, byte[] salt, int algorithm)
+    private static SecretKey getSecretKey(String password, byte[] salt, int algorithm)
             throws NoSuchAlgorithmException, InvalidKeySpecException {
 
         SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
@@ -102,7 +102,7 @@ class Krypto {
 
     } // getSecretKey()
 
-    private IvParameterSpec generateIV() {
+    private static IvParameterSpec generateIV() {
         byte[] iv = new byte[16];
         RANDOM.nextBytes(iv);
         return new IvParameterSpec(iv);
@@ -111,17 +111,17 @@ class Krypto {
     /**
      * this method converts a SecretKey object -> byte[] -> hexadecimal string -> sha256 hash
      */
-    protected String getKeyHash(SecretKey secret_key) throws NoSuchAlgorithmException {
+    protected static String getKeyHash(SecretKey secret_key) throws NoSuchAlgorithmException {
         byte[] array = secret_key.getEncoded(); // converting from SecretKey object to byte[]
-        String hex = "";
+        StringBuilder hex = new StringBuilder();
         for (byte b : array)
-            hex += String.format("%02X", b);
+            hex.append(String.format("%02X", b));
 
-        return getSHA256(hex);
+        return getSHA256(hex.toString());
 
     }// ByteArrayToHexadecimal()
 
-    protected String generateKeyAndGetHash(String master_key, String salt, int algorithm) throws NoSuchAlgorithmException{
+    protected static String generateKeyAndGetHash(String master_key, String salt, int algorithm) throws NoSuchAlgorithmException{
         SecretKey secret_key = null;
         try { // generate secret_key
             secret_key = getSecretKey(master_key, Base64.getDecoder().decode(salt), algorithm);
@@ -134,7 +134,7 @@ class Krypto {
 
     // AES Decryption
     /*-----------------------------------------------------------------------------------------*/
-    protected String decrypt(String ciphertext, String password, String salt, String iv, int algorithm){
+    protected static String decrypt(String ciphertext, String password, String salt, String iv, int algorithm){
         try{
             // generate secret_key
             SecretKey secret_key = getSecretKey(password, Base64.getDecoder().decode(salt), algorithm);
