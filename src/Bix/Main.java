@@ -3,62 +3,91 @@ package Bix;
 import java.util.Scanner;
 
 class Main{
-    static int AES_algorithm = 128; // can pass AES-128, AES-192 or AES-256
-
-    static Scanner sc = new Scanner(System.in); // creating scanner object
+    private static final Scanner input_scanner = new Scanner(System.in); // creating scanner object
 
     public static void main(String[] args){
-        clearScreen();
+        // Creating a Handler object. Handlers take care of background processes.
+        Handler handler = new Handler();
 
-        /* Create a Handler Object to read and write in credentials.csv */
-        Handler handler = new Handler(AES_algorithm);
+        // Asking the Handler to run the initial Bix setup if necessary.
+        handler.setup();
 
-        /* Getting menu option from the user */
-        System.out.print("\n Hello! This is Bix" +
-                "\n\n Choose a menu option:" +
-                "\n\n\t[1] Retrieve an account login credentials" +
-                "\n\n\t[2] Store a new account login credential" +
-                "\n\n\t[X] Exit Bix" +
-                "\n\n > Enter Menu option: ");
-
-        char user_choice = sc.nextLine().trim().toUpperCase().charAt(0); //reading user's menu choice
-
-        /* Checking if user wishes to terminate the program */
-        if(user_choice != '1' && user_choice != '2'){
-            terminate();
-        }
-
-        /* Authenticate User */
+        // Authenticate User.
         handler.authenticate();
 
-        /* Evaluating based on the menu option entered by the user */
-        switch(user_choice){
+        // Clear the Interface.
+        clearScreen();
 
-            case '1': // retrieve an account login credentials
-                String account_name; // declaring relevant to account info
+        // Main Menu loop.
+        while(true) {
+            // Getting menu option from the user.
+            System.out.printf("""
 
-                System.out.println("\nRetrieve Account Login Credential");
-                handler.printAccountNamesList(); // printing list of all account names
+                     Hello, %s!
+                     This is Bix, your Account Manager!
 
-                System.out.print("\n > Enter Account name (partial name is also accepted): ");
-                account_name = sc.nextLine().trim().toUpperCase(); // reading account name
+                     Choose a menu option:
 
-                if(handler.accountExists(account_name)){ //checking if account exists
-                    handler.getCredentialsFor(account_name); // get credentials for the account
-                }
-                break;
+                    \t[1] Find an Account
 
-            /*--------------------------------------------------------------------------------*/
+                    \t[2] Add a new Account
 
-            case '2': // create a new account login entry
-                handler.createAccountLogin();
-                break;
+                    \t[3] Manage Saved Accounts (Edit/Delete)
 
-        } //switch case
+                    \t[4] Reset Master Password
 
-        // terminating program
-        handler.closeScanner();
-        terminate();
+                    \t[5] Import Accounts from CSV file
+
+                    \t[6] Export Accounts as CSV file
+
+                    \t[X] Exit Bix
+
+                     > Enter Menu option:\s""", getUsername());
+
+            // Reading user's menu choice.
+            char user_choice = input_scanner.nextLine().trim().toUpperCase().charAt(0);
+
+            // Evaluating based on the menu option entered by the user.
+            switch (user_choice) {
+                case '1': // retrieve an account login credentials
+                    String account_name; // declaring relevant to account info
+
+                    System.out.println("\nRetrieve Account Login Credential");
+                    handler.printAccountNamesList(); // printing list of all account names
+
+                    System.out.print("\n > Enter Account name (partial name is also accepted): ");
+                    account_name = input_scanner.nextLine().trim().toUpperCase(); // reading account name
+
+                    if (handler.accountExists(account_name)) { //checking if account exists
+                        handler.getCredentialsFor(account_name); // get credentials for the account
+                    }
+                    break;
+
+                case '2': // create a new account login entry
+                    handler.createAccountLogin();
+                    break;
+
+                case '3':
+                    break;
+
+                case '4':
+                    break;
+
+                case '5':
+                    break;
+
+                case '6':
+                    break;
+
+                case 'X':
+                    terminateSession();
+                    break;
+
+                default:
+                    System.out.println("Invalid menu option entered. Try again.");
+            } // switch
+
+        } // while
 
     } // main()
 
@@ -71,9 +100,22 @@ class Main{
         } catch (Exception e) {e.printStackTrace();}
     } // clearScreen()
 
-    private static void terminate(){ // method to terminate the program
+    private static String getUsername(){
+        String username;
+        try {
+            if (System.getProperty("os.name").contains("Windows"))
+                username = System.getenv("USERNAME");
+            else
+                username = System.getenv("USER");
+
+            // Capitalizing the first letter of the username and returning.
+            return Character.toUpperCase(username.charAt(0)) + username.substring(1);
+        } catch (Exception e) {return "User";}
+    }// getUsername()
+
+    private static void terminateSession(){ // method to terminate the program
         System.out.println("\nTerminating Bix session.");
-        sc.close(); // closing scanner
+        input_scanner.close(); // closing scanner
         System.exit(0); // terminating program
 
     } // terminate()
