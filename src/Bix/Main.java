@@ -3,23 +3,18 @@ package Bix;
 import java.util.Scanner;
 
 class Main{
-    private static final Scanner input_scanner = new Scanner(System.in); // creating scanner object
+    private static final Scanner SCANNER = new Scanner(System.in); // creating scanner object
 
     public static void main(String[] args){
-        // Creating a Handler object. Handlers take care of background processes.
-        Handler handler = new Handler();
-
-        // Asking the Handler to run the initial Bix setup if necessary.
-        handler.setup();
+        // Running the initial Bix setup if necessary.
+        Handler.setup();
 
         // Authenticate User.
-        handler.authenticate();
-
-        // Clear the Interface.
-        clearScreen();
+        Handler.authenticateUser();
 
         // Main Menu loop.
-        while(true) {
+        char user_menu_choice;
+        do {
             // Getting menu option from the user.
             System.out.printf("""
 
@@ -42,29 +37,19 @@ class Main{
 
                     \t[X] Exit Bix
 
-                     > Enter Menu option:\s""", getUsername());
+                     > Enter Menu option:\s""", getUsernameFromSystem()); // getUsernameFromSystem() gets the name of the current user.
 
             // Reading user's menu choice.
-            char user_choice = input_scanner.nextLine().trim().toUpperCase().charAt(0);
+            user_menu_choice = SCANNER.nextLine().trim().toUpperCase().charAt(0);
 
             // Evaluating based on the menu option entered by the user.
-            switch (user_choice) {
-                case '1': // retrieve an account login credentials
-                    String account_name; // declaring relevant to account info
-
-                    System.out.println("\nRetrieve Account Login Credential");
-                    handler.printAccountNamesList(); // printing list of all account names
-
-                    System.out.print("\n > Enter Account name (partial name is also accepted): ");
-                    account_name = input_scanner.nextLine().trim().toUpperCase(); // reading account name
-
-                    if (handler.accountExists(account_name)) { //checking if account exists
-                        handler.getCredentialsFor(account_name); // get credentials for the account
-                    }
+            switch (user_menu_choice) {
+                case '1': // retrieve login information for an account.
+                    Handler.retrieveAccountLogin();
                     break;
 
                 case '2': // create a new account login entry
-                    handler.createAccountLogin();
+                    Handler.addAccountLogin();
                     break;
 
                 case '3':
@@ -79,15 +64,14 @@ class Main{
                 case '6':
                     break;
 
-                case 'X':
-                    terminateSession();
-                    break;
-
                 default:
                     System.out.println("Invalid menu option entered. Try again.");
             } // switch
 
-        } // while
+        }while(user_menu_choice != 'X');
+
+        // Terminating the Bix session.
+        terminateSession();
 
     } // main()
 
@@ -100,7 +84,7 @@ class Main{
         } catch (Exception e) {e.printStackTrace();}
     } // clearScreen()
 
-    private static String getUsername(){
+    private static String getUsernameFromSystem(){
         String username;
         try {
             if (System.getProperty("os.name").contains("Windows"))
@@ -114,9 +98,9 @@ class Main{
     }// getUsername()
 
     private static void terminateSession(){ // method to terminate the program
-        System.out.println("\nTerminating Bix session.");
-        input_scanner.close(); // closing scanner
-        System.exit(0); // terminating program
+        System.out.println("\nTerminating Bix session...");
+        SCANNER.close(); // closing scanner
+        System.exit(EXIT_CODES.SAFE_TERMINATION.getExitCode()); // terminating program
 
     } // terminate()
 
