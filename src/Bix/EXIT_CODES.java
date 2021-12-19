@@ -7,8 +7,8 @@ public enum EXIT_CODES {
     MISSING_HASH_FILE(101, "The hash file is missing."),
     MISSING_VAULT(102, "The vault.csv file is missing."),
 
-    AUTHENTICATION_FAILED(200, "User authentication failed."),
-    INCORRECT_MASTER_PASSWORD(201, "Incorrect Master Password."),
+    AUTHENTICATION_FAILED(200, "User Authentication Failed."),
+    INCORRECT_MASTER_PASSWORD(201, "Authentication Failed. Incorrect Master Password."),
     CONSOLE_NOT_FOUND(202, "Could not find system console.");
 
     private final int exit_code;
