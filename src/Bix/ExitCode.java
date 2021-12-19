@@ -1,6 +1,6 @@
 package Bix;
 
-public enum EXIT_CODES {
+public enum ExitCode {
     SAFE_TERMINATION(0, "Safe Termination."),
 
     MISSING_CONFIG_FILE(100, "The config.properties file is missing."),
@@ -14,7 +14,7 @@ public enum EXIT_CODES {
     private final int exit_code;
     private final String message;
 
-    EXIT_CODES(int value, String message) {
+    ExitCode(int value, String message) {
         this.exit_code = value;
         this.message = message;
     }

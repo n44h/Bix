@@ -100,7 +100,7 @@ class Main{
     private static void terminateSession(){ // method to terminate the program
         System.out.println("\nTerminating Bix session...");
         SCANNER.close(); // closing scanner
-        System.exit(EXIT_CODES.SAFE_TERMINATION.getExitCode()); // terminating program
+        System.exit(ExitCode.SAFE_TERMINATION.getExitCode()); // terminating program
 
     } // terminate()
 

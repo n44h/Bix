@@ -18,7 +18,7 @@ class Handler {
     private static String HASH_FILE; // stores the path to the location where the master key hash file is stored
     private static String MASTER_PASSWORD_HASH; // stores the SHA256 hash of the master key
     private static boolean auth_success; // FALSE by default, turns TRUE if the user authentication is successful
-    private static AES_FLAVOR AES_flavor; // can be initialized to 128-bit, 192-bit or 256-bit.
+    private static AESFlavor AES_flavor; // can be initialized to 128-bit, 192-bit or 256-bit.
     private static int vault_size;
     private static String[] account_names; // stores the stored account names.
     private static Console console; // System console reference.
@@ -34,7 +34,7 @@ class Handler {
         } catch (IOException e) {
             System.out.println("ERROR: Missing config.properties file.");
             e.printStackTrace();
-            System.exit(EXIT_CODES.MISSING_CONFIG_FILE.getExitCode());
+            System.exit(ExitCode.MISSING_CONFIG_FILE.getExitCode());
         }
         /*
         // finding credentials.csv location
@@ -47,7 +47,7 @@ class Handler {
         } catch (Exception e) {e.printStackTrace();}
                 */
         HASH_FILE = "/mkhash.txt";
-        AES_flavor = AES_FLAVOR.AES_128; // default AES flavor is 128 bit.
+        AES_flavor = AESFlavor.AES_128; // default AES flavor is 128 bit.
         auth_success = false;
         vault_size = Integer.parseInt(bix_properties.getProperty("vault_size"));
         account_names = new String[vault_size];
@@ -77,7 +77,7 @@ class Handler {
             }
             else {
                 System.out.println("\nBix Setup Failed.\n");
-                terminateSession(EXIT_CODES.MISSING_CONFIG_FILE);
+                terminateSession(ExitCode.MISSING_CONFIG_FILE);
             }
         }
     }// setup()
@@ -117,7 +117,7 @@ class Handler {
      * Set the AES flavor (128-bit, 192-bit or 256-bit).
      * @param flavor The desired AES flavor to be set as the working flavor.
      */
-    static void setAESFlavor(AES_FLAVOR flavor){
+    static void setAESFlavor(AESFlavor flavor){
         AES_flavor = flavor;
     }
 
@@ -134,7 +134,7 @@ class Handler {
             System.out.println("\nERROR: Failed to locate mkhash.txt in filepath.");
             file_located = false;
         }
-        if (!file_located) { terminateSession(EXIT_CODES.MISSING_VAULT); }
+        if (!file_located) { terminateSession(ExitCode.MISSING_VAULT); }
 
     } //verifyFile()
 
@@ -155,7 +155,7 @@ class Handler {
             // Failed authentication.
             else {
                 System.out.println("\nAuthentication failed. Incorrect Master Password.");
-                terminateSession(EXIT_CODES.INCORRECT_MASTER_PASSWORD);
+                terminateSession(ExitCode.INCORRECT_MASTER_PASSWORD);
             }
         } catch (NoSuchAlgorithmException e) { e.printStackTrace(); }
 
@@ -327,9 +327,9 @@ class Handler {
 
     /**
      * Terminates the current Bix session.
-     * @param exit_code The appropriate exit code from enum {@code EXIT_CODES}.
+     * @param exit_code The appropriate exit code from enum {@code ExitCode}.
      */
-    private static void terminateSession(EXIT_CODES exit_code) {
+    private static void terminateSession(ExitCode exit_code) {
         // Reassurance that the Master Password will always be cleared.
         clearMasterPassword();
         // Closing the Scanner stream.
@@ -373,7 +373,7 @@ class Handler {
         // comparing hash values of user entered password and hash stored in csv file
         try {
             if (!Krypto.generateKeyAndGetHash(new String(master_password), salt, AES_flavor.toInteger()).equals(values[4])) { // checking if hash values match
-                terminateSession(EXIT_CODES.INCORRECT_MASTER_PASSWORD);
+                terminateSession(ExitCode.INCORRECT_MASTER_PASSWORD);
             }
         } catch (NoSuchAlgorithmException e) { e.printStackTrace(); }
 
@@ -402,7 +402,7 @@ class Handler {
             if (Krypto.getSHA256(new String(master_password)).equals(MASTER_PASSWORD_HASH)) { // comparing hash values
                 System.out.println("\nAuthentication successful.");
             } else {
-                terminateSession(EXIT_CODES.INCORRECT_MASTER_PASSWORD);
+                terminateSession(ExitCode.INCORRECT_MASTER_PASSWORD);
             }
         } catch (NoSuchAlgorithmException e) { e.printStackTrace(); }
 
@@ -423,7 +423,7 @@ class Handler {
 
         // Print success message.
         System.out.println("Securely stored account credentials.");
-        //terminateSession(EXIT_CODES.SAFE_TERMINATION);
+        //terminateSession(ExitCode.SAFE_TERMINATION);
 
     } // createAccountLogin()
 
