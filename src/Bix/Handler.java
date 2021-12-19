@@ -20,7 +20,7 @@ class Handler {
     private static boolean auth_success; // FALSE by default, turns TRUE if the user authentication is successful
     private static AES_FLAVOR AES_flavor; // can be initialized to 128-bit, 192-bit or 256-bit.
     private static int vault_size;
-    private static String account_names[]; // stores the stored account names.
+    private static String[] account_names; // stores the stored account names.
     private static Console console; // System console reference.
     private static char[] master_password; // global char[] to store and access Master Password; must be cleared after use.
     private static int CREDENTIAL_DISPLAY_TIMEOUT; // Session timeout in seconds.
@@ -84,7 +84,7 @@ class Handler {
 
     /**
      * Sets the Master Password for Bix. Standard Password setting process.
-     * @return
+     * @return {@code true} if new Master Password was set successfully.
      */
     private static boolean setMasterPassword(){
         String first_input,second_input; // stores the user's input
@@ -108,8 +108,7 @@ class Handler {
             return true;
         }
         else{
-            System.out.println("\nThe Master Passwords you entered did not match. " +
-                                "Failed to set Master Password. Try again.\n");
+            System.out.println("\nThe two passwords you entered did not match. Failed to set Master Password.");
             return false;
         }
     }// setMasterPassword()
@@ -126,7 +125,7 @@ class Handler {
         boolean file_located = true; // turns false if one of the files is not found
 
         File csv_file = new File(IVRY_FILE);
-        if (csv_file.exists() == false) { // checking if csv file exists
+        if (!csv_file.exists()) { // checking if csv file exists
             System.out.println("\nERROR: Failed to locate credentials.csv in filepath.");
             file_located = false;
         }
@@ -160,25 +159,31 @@ class Handler {
             }
         } catch (NoSuchAlgorithmException e) { e.printStackTrace(); }
 
-        // Clearing the master Password from memory.
-        clearMasterPassword();
-    } // authenticate()
+        /* NOTE:
+         * Don't clear the Master Password from the memory after user authentication because
+         * you need it for encrypting and decrypting the vault and its contents.
+         *
+         * The Master Password will automatically get cleared from the memory by the
+         * terminateSession() method.
+         */
+    } // authenticateUser()
 
     /**
      * Gets the Master Password from the user in a secure manner.
-     * Special precautions are taken to prevent the Master Password from being leaked.
-     *
-     * @return
+     * Precautions are taken to prevent the Master Password from being leaked.
      */
     private static void getMasterPasswordFromUser(){
         System.out.print("\n > Enter Master Password: ");
         master_password = console.readPassword(); // Getting the password from user.
-    } // getMasterKeyFromUser()
+    } // getMasterPasswordFromUser()
 
+    /**
+     * Clears the Master Password from memory.
+     */
     private static void clearMasterPassword(){
         // loop to set every character in master_password to null character('\0').
         for(char ch : master_password)
-            ch = '\0'; // setting to null character.
+            ch = '\0'; // setting each character to null character.
     } // clearMasterPassword()
 
     /**
@@ -189,30 +194,30 @@ class Handler {
 
         // Boolean to indicate if the account has been found.
         boolean account_retrieved = false;
-        String prompt;
-        // ArrayList that stores all the accounts that contain the prompt entered by the user.
+
+        // ArrayList that stores all the accounts that contain the keyword entered by the user.
         ArrayList<String> search_results;
 
         // Loop will keep running till an account is found.
         do{
             System.out.print("\n > Enter Account Name: ");
-            prompt = SCANNER.nextLine().trim().toUpperCase(Locale.ROOT);
-            // Finding all account names containing the prompt.
-            search_results = getAccountNamesContaining(prompt);
+            String keyword = SCANNER.nextLine().trim().toUpperCase(Locale.ROOT);
+            // Finding all account names containing the keyword.
+            search_results = getAccountNamesContaining(keyword);
 
             switch(search_results.size()) {
-                // No account name contains the prompt.
+                // No account name contains the keyword.
                 case 0:
-                    System.out.printf("\nBix could not find an Account Name containing \"%s\".\n", prompt);
+                    System.out.printf("\nBix could not find an Account Name containing \"%s\".\n", keyword);
                     break;
 
-                // Only one account name contains the prompt, retrieve the information for that account.
+                // Only one account name contains the keyword, retrieve the information for that account.
                 case 1:
                     printCredentialsFor(search_results.get(0));
                     account_retrieved = true;
                     break;
 
-                // Two or more account names contain the prompt, display them and ask the user choose one.
+                // Two or more account names contain the keyword, display them and ask the user choose one.
                 default:
                     try{
                         for(int index = 0 ; index < search_results.size() ; index++){
@@ -231,16 +236,21 @@ class Handler {
         }while(!account_retrieved);
     } // retrieveAccountLogin()
 
-    static ArrayList<String> getAccountNamesContaining(String prompt){
-        ArrayList<String> account_names_containing_prompt = new ArrayList<>();
-        // Converting the prompt to lower case because the .contains() method is case sensitive.
-        prompt = prompt.toUpperCase(Locale.ROOT);
-        // Looping through the account_names array to find all account names that contain the prompt.
+    /**
+     * Finds account names that contain or match the keyword provided.
+     * @param keyword Keyword for finding an account.
+     * @return An {@code ArrayList<String>} containing all the Account names that contain the keyword.
+     */
+    static ArrayList<String> getAccountNamesContaining(String keyword){
+        ArrayList<String> account_names_containing_keyword = new ArrayList<>();
+        // Converting the keyword to lower case because the .contains() method is case sensitive.
+        keyword = keyword.toUpperCase(Locale.ROOT);
+        // Looping through the account_names array to find all account names that contain the keyword.
         for(String account : account_names){
-            if(account.contains(prompt))
-                account_names_containing_prompt.add(account);
+            if(account.contains(keyword))
+                account_names_containing_keyword.add(account);
         }
-        return account_names_containing_prompt;
+        return account_names_containing_keyword;
     }
 
     /**
@@ -317,7 +327,7 @@ class Handler {
 
     /**
      * Terminates the current Bix session.
-     * @param exit_code
+     * @param exit_code The appropriate exit code from enum {@code EXIT_CODES}.
      */
     private static void terminateSession(EXIT_CODES exit_code) {
         // Reassurance that the Master Password will always be cleared.
@@ -337,7 +347,7 @@ class Handler {
     /*-----------------------------------------------------------------------------------------*/
 
     static void printCredentialsFor(String account_name){
-        /** credentials.csv file format:
+        /* credentials.csv file format:
          *  account_name ,  ciphertext  ,     salt     ,     iv      , secret_key hash
          *    values[0]      values[1]      values[2]     values[3]       values[4]
          */
@@ -363,7 +373,6 @@ class Handler {
         // comparing hash values of user entered password and hash stored in csv file
         try {
             if (!Krypto.generateKeyAndGetHash(new String(master_password), salt, AES_flavor.toInteger()).equals(values[4])) { // checking if hash values match
-                System.out.println("\nERROR: Password entered is incorrect.");
                 terminateSession(EXIT_CODES.INCORRECT_MASTER_PASSWORD);
             }
         } catch (NoSuchAlgorithmException e) { e.printStackTrace(); }
@@ -383,9 +392,9 @@ class Handler {
 
     static void addAccountLogin() {
         // get account information
-        String account_name = getInput("account name").toUpperCase();
-        String username = getInput("account username");
-        String password = getInput("account password");
+        String account_name = getInput("Account Name").toUpperCase();
+        String username = getInput("Account Username");
+        String password = getInput("Account Password");
         clearScreen(); // clears all sensitive information from the screen
 
         // verifying master_key
@@ -393,7 +402,6 @@ class Handler {
             if (Krypto.getSHA256(new String(master_password)).equals(MASTER_PASSWORD_HASH)) { // comparing hash values
                 System.out.println("\nAuthentication successful.");
             } else {
-                System.out.println("\nERROR: Authentication failed. Incorrect key entered");
                 terminateSession(EXIT_CODES.INCORRECT_MASTER_PASSWORD);
             }
         } catch (NoSuchAlgorithmException e) { e.printStackTrace(); }
@@ -413,28 +421,39 @@ class Handler {
             csvWriter.close();
         } catch (IOException e) { e.printStackTrace(); }
 
-        // print success message and terminate
+        // Print success message.
         System.out.println("Securely stored account credentials.");
-        terminateSession(EXIT_CODES.SAFE_TERMINATION);
+        //terminateSession(EXIT_CODES.SAFE_TERMINATION);
 
     } // createAccountLogin()
 
     private static String getInput (String data_name){
-        String user_input; // stores the user's input
-        boolean confirm = false; // while loop control variable
-
-        // get the data from user
         do {
-            System.out.print("\n > Enter " + data_name + ": ");
-            user_input = SCANNER.nextLine().trim(); // reading user input
+            // If the input is a password.
+            if(data_name.toUpperCase(Locale.ROOT).contains("PASSWORD")){
+                System.out.print("\n > Enter " + data_name + " (1st time): ");
+                char[] password_1 = console.readPassword();
+                System.out.print("\n > Enter " + data_name + " (2nd time): ");
+                char[] password_2 = console.readPassword();
 
-            System.out.print("\n *> Confirm this " + data_name + "? [Y]/[n]: ");
-            if (SCANNER.nextLine().trim().toLowerCase().charAt(0) == 'y') {
-                confirm = true;
+                // Checking to see if the user entered the same password both times.
+                if(password_1 == password_2)
+                    return new String(password_1); // if they match, then return password_1 as a String.
+                else // if they do not match.
+                    System.out.printf("\nThe %s you entered the 2nd time did not match the 1st one. Please try again.\n", data_name);
             }
-        } while (!confirm);
+            // If not a password.
+            else {
+                // reading user input
+                System.out.print("\n > Enter " + data_name + ": ");
+                String user_input = SCANNER.nextLine().trim();
 
-        return user_input;
+                // Confirming user's input.
+                System.out.print("\n *> Confirm this " + data_name + "? [Y]/[n]: ");
+                if (SCANNER.nextLine().trim().toLowerCase().charAt(0) == 'y')
+                    return user_input; // return the value if user confirms.
+            }
+        } while (true); // endless loop. return statements will take care of exit.
 
-    } // getData()
+    } // getInput()
 } // class
