@@ -1,26 +1,26 @@
-package BixDB;
+package com.cookiecrumbs19212.bix.BixDB;
 
 import java.io.*;
 
 import java.util.ArrayList;
 
-import BixDB.BixDB_Exceptions.*;
+import com.cookiecrumbs19212.bix.BixDB.DatabaseExceptions.*;
 
 public class BixDB implements AutoCloseable, Serializable{
     /**
-     * Each Attribute object in attributes[] acts like a Column in the Ivory Database.
-     * Each Attribute object holds the column values for an Attribute in an Object Array.
+     * Each Column holds the column values for an Attribute in an Object Array.
      * Hence, an Ivory Database may have several Attributes associated to it and these
      * Attribute.java objects are kept track of using an Array of Attributes in the
      * IvoryDatabase.java class: 'Attribute[] attributes'
      */
-    private ArrayList<Column> COLUMNS; // ArrayList of all Column objects of this Ivory Database.
+    private ArrayList<Column> columns; // ArrayList of all Column objects of this Ivory Database.
     private int no_of_columns; // keeps track of the total number of columns in the Database.
     private int no_of_rows; // keeps track of the total number of rows in the Database.
+    private String MASTER_PASSWORD_HASH; // stores the SHA256 hash of the Master Password.
 
     private transient File FILE_LOCATION = null; // the file where the Ivory Database is stored and saved to.
 
-    private static final String file_extension = ".ivry"; // the file extension of the IvoryDB file.
+    private static final String file_extension = ".bxdb"; // the file extension of the IvoryDB file.
     private static final String file_separator = File.separator; // the file separator of the System.
 
 
@@ -33,7 +33,7 @@ public class BixDB implements AutoCloseable, Serializable{
      *        "Attributes" and they are implemented using Attribute objects.
      *
      *        This is done because Java does not natively support multidimensional
-     *        arrays of different Types. Hence the Attribute.java object is
+     *        arrays of different Types. Hence, the Attribute.java object is
      *        utilized to realize 'columns' in the Ivory Database and the
      *        IvoryDatabase.java class contains the class variable attributes
      *        which is an Array of Attribute.java objects.
@@ -49,7 +49,7 @@ public class BixDB implements AutoCloseable, Serializable{
     public BixDB() {
         this.no_of_rows = 0;
         this.no_of_columns = 0;
-        COLUMNS = new ArrayList<>();
+        columns = new ArrayList<>();
 
         // creating default Attribute "ID" that every Ivory Database must contain.
         this.ADD_COLUMN("ID");
@@ -65,7 +65,7 @@ public class BixDB implements AutoCloseable, Serializable{
      */
     public BixDB(BixDB ivoryDBObject) {
         // copying parameter's object variables to this object's variables.
-        this.COLUMNS = ivoryDBObject.COLUMNS;
+        this.columns = ivoryDBObject.columns;
         this.no_of_rows = ivoryDBObject.no_of_rows;
         this.no_of_columns = ivoryDBObject.no_of_columns;
     } // constructor IvoryDatabase(IvoryDatabase Object)
@@ -108,12 +108,12 @@ public class BixDB implements AutoCloseable, Serializable{
 
             // deserializing and casting.
             BixDB deserializedDB = (BixDB) streamIn.readObject();
-            this.COLUMNS = deserializedDB.COLUMNS;
+            this.columns = deserializedDB.columns;
 
             // assigning the size of the ID column to no_of_rows.
-            this.no_of_rows = COLUMNS.get(0).getSize();
+            this.no_of_rows = columns.get(0).getSize();
             // assigning the size of the COLUMNS array list to no_of_columns.
-            this.no_of_columns = COLUMNS.size();
+            this.no_of_columns = columns.size();
 
 
             // closing streams.
@@ -166,12 +166,12 @@ public class BixDB implements AutoCloseable, Serializable{
 
             // deserializing and casting.
             BixDB deserializedDB = (BixDB) streamIn.readObject();
-            this.COLUMNS = deserializedDB.COLUMNS;
+            this.columns = deserializedDB.columns;
 
             // assigning the size of the ID column to no_of_rows.
-            this.no_of_rows = COLUMNS.get(0).getSize();
+            this.no_of_rows = columns.get(0).getSize();
             // assigning the size of the COLUMNS array list to no_of_columns.
-            this.no_of_columns = COLUMNS.size();
+            this.no_of_columns = columns.size();
 
             // closing streams.
             streamIn.close();
@@ -353,14 +353,14 @@ public class BixDB implements AutoCloseable, Serializable{
      */
     public String[] getColumnNames(){
         // getting the number of columns in this database.
-        int size = COLUMNS.size();
+        int size = columns.size();
 
         // creating output String[].
         String[] output = new String[size];
 
         // running a loop through columns ArrayList.
         for(int index = 0 ; index < size ; index++){
-            output[index] = COLUMNS.get(index).getName();
+            output[index] = columns.get(index).getName();
         }
         return output;
     } // getColumnNames()
@@ -436,7 +436,7 @@ public class BixDB implements AutoCloseable, Serializable{
     public boolean ADD_COLUMN(String column_name){
         try{
             // adding new Column object with the same number of rows as the current database.
-            COLUMNS.add(new Column(column_name.toUpperCase(), no_of_rows));
+            columns.add(new Column(column_name.toUpperCase(), no_of_rows));
 
             // increment no_of_columns.
             no_of_columns++;
@@ -465,7 +465,7 @@ public class BixDB implements AutoCloseable, Serializable{
 
             @SuppressWarnings("unused") // suppress warning that 'column' is unused.
             // removing the column from columns.
-            Column column = COLUMNS.remove(col_num);
+            Column column = columns.remove(col_num);
             // set the column to null to effectively delete it.
             column = null;
         }
@@ -534,7 +534,7 @@ public class BixDB implements AutoCloseable, Serializable{
         this.SAVE();
 
         // setting all the columns to null.
-        for(Column column : COLUMNS) {
+        for(Column column : columns) {
             column = null;
         }
         System.gc(); // invoking java garbage collector
@@ -558,8 +558,8 @@ public class BixDB implements AutoCloseable, Serializable{
         newEntry[0] = new_id;
 
         // All values in ID column must be unique.
-        // run a loop to check if a ID already exists in the ID column with the same value as the 'id' parameter.
-        temp = COLUMNS.get(0); // referring to the ID column.
+        // run a loop to check if an ID already exists in the ID column with the same value as the 'id' parameter.
+        temp = columns.get(0); // referring to the ID column.
 
         // check if ID column is empty.
         if(!temp.isEmpty()){
@@ -582,7 +582,7 @@ public class BixDB implements AutoCloseable, Serializable{
         if(insert_index == -1){
             // loop going through every Column to add the attributes of this entry.
             for(int col_num = 0 ; col_num < no_of_columns ; col_num++){
-                temp = COLUMNS.get(col_num);
+                temp = columns.get(col_num);
                 temp.add(newEntry[col_num]);
             }
         }
@@ -590,7 +590,7 @@ public class BixDB implements AutoCloseable, Serializable{
             // loop going through every column to add the attributes of this entry.
             for(int col_num = 0 ; col_num < no_of_columns ; col_num++){
                 // inserting the new Entry's attribute to the corresponding Attribute column.
-                temp = COLUMNS.get(col_num);
+                temp = columns.get(col_num);
                 temp.insert(insert_index, newEntry[col_num]);
             }
         }
@@ -604,16 +604,16 @@ public class BixDB implements AutoCloseable, Serializable{
      * Method to delete a row from the database.
      *
      * @param id
-     *        ID of the entry that needs to deleted.
+     *        ID of the entry that needs to be deleted.
      *
-     * @return True if the entry was successfully deleted. Otherwise false.
+     * @return True if the entry was successfully deleted.
      */
     public boolean DELETE(String id){
         try{
             // getting the row number of id.
             int row_num = getRowNumberOf(id);
 
-            for(Column col : COLUMNS){
+            for(Column col : columns){
                 // deleting values of the entry from each row
                 col.delete(row_num);
             }
@@ -645,7 +645,7 @@ public class BixDB implements AutoCloseable, Serializable{
             int col_num = getColumnNumberOf(column_name);
             int row_num = getRowNumberOf(id);
 
-            return COLUMNS.get(col_num).get(row_num);
+            return columns.get(col_num).get(row_num);
         }
         // if either id or column_name are invalid, an exception is thrown.
         catch (ColumnNotFoundException | RowNotFoundException e){
@@ -681,7 +681,7 @@ public class BixDB implements AutoCloseable, Serializable{
             return false;
         }
         // creating a Column reference to col_num.
-        Column column = COLUMNS.get(col_num);
+        Column column = columns.get(col_num);
         // setting the value of the cell.
         column.set(row_num, value);
 
@@ -704,7 +704,7 @@ public class BixDB implements AutoCloseable, Serializable{
             int col_num = getColumnNumberOf(column_name);
 
             // converting Column to an Object Array and returning it.
-            return COLUMNS.get(col_num).toArray();
+            return columns.get(col_num).toArray();
         }
         catch (ColumnNotFoundException e){
             e.printStackTrace();
@@ -721,7 +721,7 @@ public class BixDB implements AutoCloseable, Serializable{
         Column currentCol;
         for(int row = 0 ; row < no_of_rows ; row++){
             for(int col = 0 ; col < no_of_columns ; col++){
-                currentCol = COLUMNS.get(col);
+                currentCol = columns.get(col);
                 output.append(currentCol.get(row)).append(", ");
             }
             output.append("\b\n");
@@ -744,7 +744,7 @@ public class BixDB implements AutoCloseable, Serializable{
         // making id uppercase.
         id = id.toUpperCase();
         // getting the ID attribute column.
-        Column id_column = COLUMNS.get(0);
+        Column id_column = columns.get(0);
 
         // if ID column is empty, then return -1.
         if (no_of_rows == 0){
@@ -782,7 +782,7 @@ public class BixDB implements AutoCloseable, Serializable{
 
         // run loop through columns to search for column with name: column_name.
         for(int index = 0 ; index < no_of_columns ; index++){
-            if(column_name.equals(COLUMNS.get(index).getName())){
+            if(column_name.equals(columns.get(index).getName())){
                 return index;
             }
         }
@@ -808,7 +808,7 @@ public class BixDB implements AutoCloseable, Serializable{
         // make id uppercase.
         id = id.toUpperCase();
         // making a reference to the ID column.
-        Column id_columns = COLUMNS.get(0);
+        Column id_columns = columns.get(0);
 
         // run loop through the ID column.
         for(int index = 0 ; index < no_of_rows ; index++){
@@ -817,7 +817,7 @@ public class BixDB implements AutoCloseable, Serializable{
             }
         }
 
-        // throw an Exception if a row with the ID id is not found.
+        // throw an Exception if a row with the ID is not found.
         throw new RowNotFoundException(id);
     } // getRowNumberOf()
 
