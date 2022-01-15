@@ -1,8 +1,8 @@
-package Bix;
+package com.cookiecrumbs19212.bix;
 
 import java.util.Scanner;
 
-class Main{
+class Bix {
     private static final Scanner SCANNER = new Scanner(System.in); // creating scanner object
 
     public static void main(String[] args){
@@ -12,7 +12,7 @@ class Main{
         // Authenticate User.
         Handler.authenticateUser();
 
-        // Main Menu loop.
+        // Bix Menu loop.
         char user_menu_choice;
         do {
             // Getting menu option from the user.
@@ -104,4 +104,4 @@ class Main{
 
     } // terminate()
 
-} // class Main
+} // class Bix

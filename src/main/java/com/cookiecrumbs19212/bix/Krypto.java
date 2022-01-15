@@ -1,4 +1,4 @@
-package Bix;
+package com.cookiecrumbs19212.bix;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;

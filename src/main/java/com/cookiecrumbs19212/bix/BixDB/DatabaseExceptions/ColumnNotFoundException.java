@@ -1,4 +1,4 @@
-package BixDB.BixDB_Exceptions;
+package com.cookiecrumbs19212.bix.BixDB.DatabaseExceptions;
 
 public class ColumnNotFoundException extends Exception {
     public ColumnNotFoundException(String column_name) {

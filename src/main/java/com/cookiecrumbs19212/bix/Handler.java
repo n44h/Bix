@@ -1,4 +1,4 @@
-package Bix;
+package com.cookiecrumbs19212.bix;
 
 import java.io.*;
 import java.net.URL;
@@ -23,7 +23,7 @@ class Handler {
     private static String[] account_names; // stores the stored account names.
     private static Console console; // System console reference.
     private static char[] master_password; // global char[] to store and access Master Password; must be cleared after use.
-    private static int CREDENTIAL_DISPLAY_TIMEOUT; // Session timeout in seconds.
+    private static int CREDENTIAL_DISPLAY_TIMEOUT; // duration that credentials are displayed in seconds.
     private static final Scanner SCANNER = new Scanner(System.in);
 
     Handler() {
@@ -34,7 +34,7 @@ class Handler {
         } catch (IOException e) {
             System.out.println("ERROR: Missing config.properties file.");
             e.printStackTrace();
-            System.exit(ExitCode.MISSING_CONFIG_FILE.getExitCode());
+            terminateSession(ExitCode.MISSING_CONFIG_FILE);
         }
         /*
         // finding credentials.csv location
@@ -42,7 +42,7 @@ class Handler {
             // first line finds the location of .jar file, second line attaches
             // "credentials.csv" string to the parent path of .jar file
             // NOTE: it is assumed that the credentials.csv file is in the same folder as the .jar file
-            File jarFile = new File(Main.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath());
+            File jarFile = new File(Bix.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath());
             IVRY_FILE = jarFile.getParent() + File.separator + "credentials.csv";
         } catch (Exception e) {e.printStackTrace();}
                 */
@@ -68,17 +68,23 @@ class Handler {
      * Runs initial setup processes.
      */
     static void setup(){
-        // If this is the first time opening Bix, do the initial setup.
-        if(Boolean.parseBoolean(bix_properties.getProperty("initial_setup_required"))){
-            if(setMasterPassword()) {
+        // Firstly, confirm that the config file exists.
+        File config_file = new File("something idk yet");
+        try {
+            // If this is the first time opening Bix, do the initial setup.
+            if (Boolean.parseBoolean(bix_properties.getProperty("initial_setup_required"))) {
+                // Step 1: Set up the Master Password.
+                if (setMasterPassword()) {
                 /* If initial setup was successful, set the "initial_setup_property" as false
                    to prevent setup procedure from redundantly running again in the future. */
-                bix_properties.setProperty("initial_setup_required", "false");
+                    bix_properties.setProperty("initial_setup_required", "false");
+                } else {
+                    System.out.println("\nBix Setup Failed.\n");
+                    terminateSession(ExitCode.MASTER_PASSWORD_SETUP_FAILED);
+                }
             }
-            else {
-                System.out.println("\nBix Setup Failed.\n");
-                terminateSession(ExitCode.MISSING_CONFIG_FILE);
-            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }// setup()
 
@@ -134,7 +140,7 @@ class Handler {
             System.out.println("\nERROR: Failed to locate mkhash.txt in filepath.");
             file_located = false;
         }
-        if (!file_located) { terminateSession(ExitCode.MISSING_VAULT); }
+        if (!file_located) { terminateSession(ExitCode.MISSING_VAULT_FILE); }
 
     } //verifyFile()
 
@@ -226,6 +232,7 @@ class Handler {
                         }
                         System.out.print("Choose an Account to view (enter the number inside [ ]): ");
                         printCredentialsFor(search_results.get(Integer.parseInt(SCANNER.next().trim())));
+                        account_retrieved = true;
                     }
                     catch(Exception e){
                         clearScreen();
