@@ -17,7 +17,7 @@ public enum ExitCode {
     SAFE_TERMINATION(0, "Safe Termination."),
 
     // 1. File/Resource Errors.
-    UNKNOWN_RESOURCE_ERROR(100, "An unknown resource error has occurred."),
+    UNKNOWN_RESOURCE_ERROR(100, "An unknown file/resource error has occurred."),
 
     PROPERTY_FILE_NOT_FOUND(110, "The config.properties file could not be found."),
     VAULT_FILE_NOT_FOUND(111, "The vault.bxdb file could not be found."),
@@ -50,4 +50,5 @@ public enum ExitCode {
     }
 
     public String getMessage() { return message; }
-}
+
+} // ExitCode class
