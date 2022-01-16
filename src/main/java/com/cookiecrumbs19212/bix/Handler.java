@@ -18,7 +18,7 @@ class Handler {
     private static String HASH_FILE; // stores the path to the location where the master key hash file is stored
     private static String MASTER_PASSWORD_HASH; // stores the SHA256 hash of the master key
     private static boolean auth_success; // FALSE by default, turns TRUE if the user authentication is successful
-    private static AESFlavor AES_flavor; // can be initialized to 128-bit, 192-bit or 256-bit.
+    private static int AES_flavor; // can be set to 128-bit, 192-bit or 256-bit.
     private static int vault_size;
     private static String[] account_names; // stores the stored account names.
     private static Console console; // System console reference.
@@ -29,12 +29,22 @@ class Handler {
     Handler() {
         // Creating a Properties object to parse the config.properties file.
         bix_properties = new Properties();
+        // Filename of the properties file.
+        String properties_filename = "config.properties";
         try {
-            bix_properties.load(new FileInputStream("config.properties"));
-        } catch (IOException e) {
-            System.out.println("ERROR: Missing config.properties file.");
+            // Creating an input stream object of the properties file which is in the Resource folder.
+            InputStream resource_file_input_stream = getClass().getClassLoader().getResourceAsStream(properties_filename);
+            // Loading the properties into bix_properties.
+            bix_properties.load(resource_file_input_stream);
+        } catch (IOException ioe) {
+            ioe.printStackTrace();
+            terminateSession(ExitCode.ERROR_ACCESSING_PROPERTY_FILE);
+        } catch (NullPointerException ne){
+            ne.printStackTrace();
+            terminateSession(ExitCode.PROPERTY_FILE_NOT_FOUND);
+        } catch (Exception e) {
             e.printStackTrace();
-            terminateSession(ExitCode.MISSING_CONFIG_FILE);
+            terminateSession(ExitCode.UNKNOWN_RESOURCE_ERROR);
         }
         /*
         // finding credentials.csv location
@@ -47,11 +57,13 @@ class Handler {
         } catch (Exception e) {e.printStackTrace();}
                 */
         HASH_FILE = "/mkhash.txt";
-        AES_flavor = AESFlavor.AES_128; // default AES flavor is 128 bit.
+        AES_flavor = AESFlavor.AES_128.toInteger(); // default AES flavor is 128 bit.
         auth_success = false;
         vault_size = Integer.parseInt(bix_properties.getProperty("vault_size"));
         account_names = new String[vault_size];
         console = System.console(); // attaching variable to the system console.
+        if (console == null)
+            terminateSession(ExitCode.CONSOLE_NOT_FOUND);
         CREDENTIAL_DISPLAY_TIMEOUT = 15; // Setting session timeout to 15 seconds.
         //verifyFileExists();
 
@@ -124,7 +136,7 @@ class Handler {
      * @param flavor The desired AES flavor to be set as the working flavor.
      */
     static void setAESFlavor(AESFlavor flavor){
-        AES_flavor = flavor;
+        AES_flavor = flavor.toInteger();
     }
 
     private void verifyFileExists() { // method to check if the required csv and hash files exist
@@ -140,7 +152,7 @@ class Handler {
             System.out.println("\nERROR: Failed to locate mkhash.txt in filepath.");
             file_located = false;
         }
-        if (!file_located) { terminateSession(ExitCode.MISSING_VAULT_FILE); }
+        if (!file_located) { terminateSession(ExitCode.VAULT_FILE_NOT_FOUND); }
 
     } //verifyFile()
 
@@ -161,7 +173,7 @@ class Handler {
             // Failed authentication.
             else {
                 System.out.println("\nAuthentication failed. Incorrect Master Password.");
-                terminateSession(ExitCode.INCORRECT_MASTER_PASSWORD);
+                terminateSession(ExitCode.AUTHENTICATION_FAILED);
             }
         } catch (NoSuchAlgorithmException e) { e.printStackTrace(); }
 
@@ -379,13 +391,13 @@ class Handler {
 
         // comparing hash values of user entered password and hash stored in csv file
         try {
-            if (!Krypto.generateKeyAndGetHash(new String(master_password), salt, AES_flavor.toInteger()).equals(values[4])) { // checking if hash values match
-                terminateSession(ExitCode.INCORRECT_MASTER_PASSWORD);
+            if (!Krypto.generateKeyAndGetHash(new String(master_password), salt, AES_flavor).equals(values[4])) { // checking if hash values match
+                terminateSession(ExitCode.AUTHENTICATION_FAILED);
             }
         } catch (NoSuchAlgorithmException e) { e.printStackTrace(); }
 
         // decrypting ciphertext
-        String plaintext = Krypto.decrypt(ciphertext, new String(master_password), salt, iv, AES_flavor.toInteger());
+        String plaintext = Krypto.decrypt(ciphertext, new String(master_password), salt, iv, AES_flavor);
 
         // displaying credentials
         System.out.println("\nUsername: " + plaintext.substring(0, plaintext.indexOf(" ")));
@@ -409,13 +421,13 @@ class Handler {
             if (Krypto.getSHA256(new String(master_password)).equals(MASTER_PASSWORD_HASH)) { // comparing hash values
                 System.out.println("\nAuthentication successful.");
             } else {
-                terminateSession(ExitCode.INCORRECT_MASTER_PASSWORD);
+                terminateSession(ExitCode.AUTHENTICATION_FAILED);
             }
         } catch (NoSuchAlgorithmException e) { e.printStackTrace(); }
 
         // creating new csv line entry
         String plaintext = username + " " + password;
-        String new_csv_entry = account_name + "," + Krypto.encrypt(plaintext, new String(master_password), AES_flavor.toInteger());
+        String new_csv_entry = account_name + "," + Krypto.encrypt(plaintext, new String(master_password), AES_flavor);
 
         // writing to csv file
         FileWriter csvWriter;
