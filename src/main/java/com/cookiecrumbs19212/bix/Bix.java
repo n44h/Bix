@@ -1,18 +1,16 @@
 package com.cookiecrumbs19212.bix;
 
-import java.io.Console;
 import java.util.Scanner;
 
 class Bix {
     private static final Scanner SCANNER = new Scanner(System.in); // creating scanner object.
-    private static final Console CONSOLE = System.console(); // creating console object.
 
     public static void main(String[] args){
         // Running the Bix setup.
         Handler.setup();
 
         // Authenticate User.
-        char[] master_password = getMasterPasswordFromUser(); // get the master password securely.
+        char[] master_password = Handler.getMasterPasswordFromUser(); // get the master password securely.
         Handler.authenticateUser(master_password); // authenticate.
 
         // Bix Menu loop.
@@ -79,15 +77,6 @@ class Bix {
         Handler.terminateSession(ExitCode.SAFE_TERMINATION);
 
     } // main()
-
-    /**
-     * Gets the Master Password from the user in a secure manner.
-     * Precautions are taken to prevent the Master Password from being leaked.
-     */
-    private static char[] getMasterPasswordFromUser(){
-        System.out.print("\n > Enter Master Password: ");
-        return CONSOLE.readPassword(); // Getting the password from user.
-    } // getMasterPasswordFromUser()
 
     /**
      * Retrieves the username of the current user from the system environment.
