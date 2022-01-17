@@ -1,16 +1,19 @@
 package com.cookiecrumbs19212.bix;
 
+import java.io.Console;
 import java.util.Scanner;
 
 class Bix {
-    private static final Scanner SCANNER = new Scanner(System.in); // creating scanner object
+    private static final Scanner SCANNER = new Scanner(System.in); // creating scanner object.
+    private static final Console CONSOLE = System.console(); // creating console object.
 
     public static void main(String[] args){
-        // Running the initial Bix setup if necessary.
+        // Running the Bix setup.
         Handler.setup();
 
         // Authenticate User.
-        Handler.authenticateUser();
+        char[] master_password = getMasterPasswordFromUser(); // get the master password securely.
+        Handler.authenticateUser(master_password); // authenticate.
 
         // Bix Menu loop.
         char user_menu_choice;
@@ -31,9 +34,9 @@ class Bix {
 
                     \t[4] Reset Master Password
 
-                    \t[5] Import Accounts from CSV file
-
-                    \t[6] Export Accounts as CSV file
+                    \t[5] Import/Export a CSV vault file
+                    
+                    \t[6] Help and About Bix
 
                     \t[X] Exit Bix
 
@@ -71,19 +74,25 @@ class Bix {
         }while(user_menu_choice != 'X');
 
         // Terminating the Bix session.
-        terminateSession();
+        System.out.println("\nTerminating Bix session...");
+        SCANNER.close(); // closing scanner
+        Handler.terminateSession(ExitCode.SAFE_TERMINATION);
 
     } // main()
 
-    private static void clearScreen(){ // clears terminal and console
-        try {
-            if (System.getProperty("os.name").contains("Windows"))
-                new ProcessBuilder("cmd", "/c", "cls").inheritIO().start().waitFor();
-            else
-                System.out.print("\033\143");
-        } catch (Exception e) {e.printStackTrace();}
-    } // clearScreen()
+    /**
+     * Gets the Master Password from the user in a secure manner.
+     * Precautions are taken to prevent the Master Password from being leaked.
+     */
+    private static char[] getMasterPasswordFromUser(){
+        System.out.print("\n > Enter Master Password: ");
+        return CONSOLE.readPassword(); // Getting the password from user.
+    } // getMasterPasswordFromUser()
 
+    /**
+     * Retrieves the username of the current user from the system environment.
+     * @return User's name if one is found, otherwise, returns "User".
+     */
     private static String getUsernameFromSystem(){
         String username;
         try {
@@ -95,13 +104,18 @@ class Bix {
             // Capitalizing the first letter of the username and returning.
             return Character.toUpperCase(username.charAt(0)) + username.substring(1);
         } catch (Exception e) {return "User";}
-    }// getUsername()
+    }// getUsernameFromSystem()
 
-    private static void terminateSession(){ // method to terminate the program
-        System.out.println("\nTerminating Bix session...");
-        SCANNER.close(); // closing scanner
-        System.exit(ExitCode.SAFE_TERMINATION.getExitCode()); // terminating program
-
-    } // terminate()
+    /**
+     * Clears the console screen.
+     */
+    private static void clearScreen(){ // clears terminal and console
+        try {
+            if (System.getProperty("os.name").contains("Windows"))
+                new ProcessBuilder("cmd", "/c", "cls").inheritIO().start().waitFor();
+            else
+                System.out.print("\033\143");
+        } catch (Exception e) {e.printStackTrace();}
+    } // clearScreen()
 
 } // class Bix
