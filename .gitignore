@@ -107,3 +107,4 @@ Temporary Items
 /src/test/
 /.gradle/
 /.idea/
+/build/
