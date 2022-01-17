@@ -3,10 +3,7 @@ package com.cookiecrumbs19212.bix;
 import java.io.*;
 import java.net.URL;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Locale;
-import java.util.Properties;
-import java.util.Scanner;
+import java.util.*;
 
 /**
  * This is an object class that handles reading and writing in .csv files
@@ -22,7 +19,7 @@ class Handler {
     private static int vault_size;
     private static String[] account_names; // stores the stored account names.
     private static Console console; // System console reference.
-    private static char[] master_password; // global char[] to store and access Master Password; must be cleared after use.
+    private static char[] MASTER_PASSWORD; // global char[] to store and access Master Password; must be cleared from memory before session end.
     private static int CREDENTIAL_DISPLAY_TIMEOUT; // duration that credentials are displayed in seconds.
     private static final Scanner SCANNER = new Scanner(System.in);
 
@@ -56,6 +53,7 @@ class Handler {
             IVRY_FILE = jarFile.getParent() + File.separator + "credentials.csv";
         } catch (Exception e) {e.printStackTrace();}
                 */
+        MASTER_PASSWORD = null; // will be null until the user has been successfully authenticated.
         HASH_FILE = "/mkhash.txt";
         AES_flavor = AESFlavor.AES_128.toInteger(); // default AES flavor is 128 bit.
         auth_success = false;
@@ -159,29 +157,32 @@ class Handler {
     /**
      * Method to authenticate the user.
      */
-    static void authenticateUser() {
-        // First, get the master password from the user.
-        getMasterPasswordFromUser();
-
+    static void authenticateUser(char[] master_password) {
         try {
             // Successful authentication.
             if (Krypto.getSHA256(new String(master_password)).equals(MASTER_PASSWORD_HASH)) { // comparing hash values
+                // Clear the screen and display the appropriate message.
                 clearScreen();
                 System.out.println("\nAuthentication successful.");
-                auth_success = true;
+
+                // Copy the input char[] to the class variable MASTER_PASSWORD.
+                MASTER_PASSWORD = Arrays.copyOf(master_password, master_password.length);
+                auth_success = true; // set the user authentication flag to true.
             }
             // Failed authentication.
             else {
-                System.out.println("\nAuthentication failed. Incorrect Master Password.");
                 terminateSession(ExitCode.AUTHENTICATION_FAILED);
             }
         } catch (NoSuchAlgorithmException e) { e.printStackTrace(); }
 
+        // Clear the input char[] from the memory.
+        clearCharArrayFromMemory(master_password);
+
         /* NOTE:
-         * Don't clear the Master Password from the memory after user authentication because
+         * Don't clear MASTER_PASSWORD from the memory after user authentication because
          * you need it for encrypting and decrypting the vault and its contents.
          *
-         * The Master Password will automatically get cleared from the memory by the
+         * The MASTER_PASSWORD variable will automatically get cleared from the memory by the
          * terminateSession() method.
          */
     } // authenticateUser()
@@ -190,19 +191,18 @@ class Handler {
      * Gets the Master Password from the user in a secure manner.
      * Precautions are taken to prevent the Master Password from being leaked.
      */
-    private static void getMasterPasswordFromUser(){
+    private static char[] getMasterPasswordFromUser(){
         System.out.print("\n > Enter Master Password: ");
-        master_password = console.readPassword(); // Getting the password from user.
+        return console.readPassword(); // Getting the password from user.
     } // getMasterPasswordFromUser()
 
     /**
-     * Clears the Master Password from memory.
+     * Clear character arrays from memory by setting its elements to null characters.
      */
-    private static void clearMasterPassword(){
-        // loop to set every character in master_password to null character('\0').
-        for(char ch : master_password)
-            ch = '\0'; // setting each character to null character.
-    } // clearMasterPassword()
+    static void clearCharArrayFromMemory(char[] char_array){
+        // Setting every character in the array to null character('\0') using Arrays.fill().
+        Arrays.fill(char_array,'\0');
+    } // clearCharArrayFromMemory()
 
     /**
      * Retrieves Account login credentials requested by the user.
@@ -348,9 +348,9 @@ class Handler {
      * Terminates the current Bix session.
      * @param exit_code The appropriate exit code from enum {@code ExitCode}.
      */
-    private static void terminateSession(ExitCode exit_code) {
-        // Reassurance that the Master Password will always be cleared.
-        clearMasterPassword();
+    static void terminateSession(ExitCode exit_code) {
+        // Reassurance that the Master Password will always be cleared from the memory.
+        clearCharArrayFromMemory(MASTER_PASSWORD);
         // Closing the Scanner stream.
         SCANNER.close();
 
@@ -391,13 +391,13 @@ class Handler {
 
         // comparing hash values of user entered password and hash stored in csv file
         try {
-            if (!Krypto.generateKeyAndGetHash(new String(master_password), salt, AES_flavor).equals(values[4])) { // checking if hash values match
+            if (!Krypto.generateKeyAndGetHash(new String(MASTER_PASSWORD), salt, AES_flavor).equals(values[4])) { // checking if hash values match
                 terminateSession(ExitCode.AUTHENTICATION_FAILED);
             }
         } catch (NoSuchAlgorithmException e) { e.printStackTrace(); }
 
         // decrypting ciphertext
-        String plaintext = Krypto.decrypt(ciphertext, new String(master_password), salt, iv, AES_flavor);
+        String plaintext = Krypto.decrypt(ciphertext, new String(MASTER_PASSWORD), salt, iv, AES_flavor);
 
         // displaying credentials
         System.out.println("\nUsername: " + plaintext.substring(0, plaintext.indexOf(" ")));
@@ -418,7 +418,7 @@ class Handler {
 
         // verifying master_key
         try {
-            if (Krypto.getSHA256(new String(master_password)).equals(MASTER_PASSWORD_HASH)) { // comparing hash values
+            if (Krypto.getSHA256(new String(MASTER_PASSWORD)).equals(MASTER_PASSWORD_HASH)) { // comparing hash values
                 System.out.println("\nAuthentication successful.");
             } else {
                 terminateSession(ExitCode.AUTHENTICATION_FAILED);
@@ -427,7 +427,7 @@ class Handler {
 
         // creating new csv line entry
         String plaintext = username + " " + password;
-        String new_csv_entry = account_name + "," + Krypto.encrypt(plaintext, new String(master_password), AES_flavor);
+        String new_csv_entry = account_name + "," + Krypto.encrypt(plaintext, new String(MASTER_PASSWORD), AES_flavor);
 
         // writing to csv file
         FileWriter csvWriter;
