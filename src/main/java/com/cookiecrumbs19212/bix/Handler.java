@@ -191,7 +191,7 @@ class Handler {
      * Gets the Master Password from the user in a secure manner.
      * Precautions are taken to prevent the Master Password from being leaked.
      */
-    private static char[] getMasterPasswordFromUser(){
+    static char[] getMasterPasswordFromUser(){
         System.out.print("\n > Enter Master Password: ");
         return console.readPassword(); // Getting the password from user.
     } // getMasterPasswordFromUser()
