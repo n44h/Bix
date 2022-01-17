@@ -16,12 +16,12 @@ public class BixDB implements AutoCloseable, Serializable{
     private ArrayList<Column> columns; // ArrayList of all Column objects of this Ivory Database.
     private int no_of_columns; // keeps track of the total number of columns in the Database.
     private int no_of_rows; // keeps track of the total number of rows in the Database.
-    private String MASTER_PASSWORD_HASH; // stores the SHA256 hash of the Master Password.
+
+    int vault_size; // stores the number of entries in the vault (i.e. the number of accounts stored).
 
     private transient File FILE_LOCATION = null; // the file where the Ivory Database is stored and saved to.
-
-    private static final String file_extension = ".bxdb"; // the file extension of the IvoryDB file.
-    private static final String file_separator = File.separator; // the file separator of the System.
+    private static final String FILE_EXTENSION = ".bxdb"; // the file extension of the IvoryDB file.
+    private static final String FILE_SEPARATOR = File.separator; // the file separator of the System.
 
 
     /**
@@ -91,7 +91,7 @@ public class BixDB implements AutoCloseable, Serializable{
             throw new IllegalArgumentException("File path cannot be null.");
         }
         // checking if the file type is correct.
-        else if (!file_path.endsWith(file_extension)){
+        else if (!file_path.endsWith(FILE_EXTENSION)){
             throw new IllegalFileTypeException();
         }
 
@@ -149,7 +149,7 @@ public class BixDB implements AutoCloseable, Serializable{
             throw new IllegalArgumentException("Ivory Database File cannot be null.");
         }
         // checking if the file type is correct.
-        else if (!ivory_file.getName().endsWith(file_extension)){
+        else if (!ivory_file.getName().endsWith(FILE_EXTENSION)){
             throw new IllegalFileTypeException();
         }
 
@@ -185,6 +185,12 @@ public class BixDB implements AutoCloseable, Serializable{
         }
     } // constructor IvoryDatabase(File)
 
+    /**
+     * @return The vault size of the BixDB object. Vault size is the number of account entries stored in the vault.
+     */
+    public int getVaultSize(){
+        return vault_size;
+    }
 
     /**
      * method to set the Ivory Database save location
@@ -213,7 +219,7 @@ public class BixDB implements AutoCloseable, Serializable{
             throw new DirectoryNotFoundException(file.getParent());
         }
         // checking that the file is the correct file type (.ivry).
-        else if (!file.getName().endsWith(file_extension)){
+        else if (!file.getName().endsWith(FILE_EXTENSION)){
             throw new IllegalFileTypeException();
         }
         // checking if a file with the same file path already exists.
@@ -245,7 +251,7 @@ public class BixDB implements AutoCloseable, Serializable{
         String workingDirectory = System.getProperty("user.dir");
 
         // creating File object for "Local Ivory Databases" to check if it already exists.
-        String defaultDirectoryPath = workingDirectory + file_separator + "Local Ivory Databases";
+        String defaultDirectoryPath = workingDirectory + FILE_SEPARATOR + "Local Ivory Databases";
         File defaultDirectory = new File(defaultDirectoryPath);
 
         // if the default directory "Local Ivory Databases" does not already exist: create the directory.
@@ -259,7 +265,7 @@ public class BixDB implements AutoCloseable, Serializable{
         /* CREATING THE DEFAULT FILE */
 
         // creating a default .ivry file in the "Local Ivory Databases" directory.
-        File defaultFile = new File(defaultDirectoryPath + file_separator + defaultFilename);
+        File defaultFile = new File(defaultDirectoryPath + FILE_SEPARATOR + defaultFilename);
 
         // check if a file with that name already exists in the same directory.
         if (defaultFile.exists()){
@@ -292,16 +298,16 @@ public class BixDB implements AutoCloseable, Serializable{
      */
     private File rectifyFileNameCollision(File input_file){
         // getting the filename without the file extension.
-        String database_name = input_file.getName().substring(0, input_file.getName().indexOf(file_extension));
+        String database_name = input_file.getName().substring(0, input_file.getName().indexOf(FILE_EXTENSION));
         // creating partial file path with the directory and filename without file extension.
-        String partial_path = input_file.getParent() + file_separator + database_name;
+        String partial_path = input_file.getParent() + FILE_SEPARATOR + database_name;
 
         // rectifying the filename.
         int number = 1; // database number concatenated to the end of the filename.
         String full_path; // stores the complete path string.
         do{
             // creating the filename by appending partial_path, number and file_extension.
-            full_path = partial_path + "(" + number + ")" + file_extension;
+            full_path = partial_path + "(" + number + ")" + FILE_EXTENSION;
             number++; // incrementing by 1
         }while(new File(full_path).exists()); // if the file exists, run loop again.
 
@@ -397,12 +403,12 @@ public class BixDB implements AutoCloseable, Serializable{
         }
 
         // checking if new_filename does not contain the file extension ".ivry".
-        if (!new_filename.endsWith(file_extension)){
+        if (!new_filename.endsWith(FILE_EXTENSION)){
             // if ".ivry" does not exist in the new_filename, check if any other file extension exists.
             if (!new_filename.contains(".")) {
                 // if no other file extension exists, append ".ivry" to the new_filename
                 // and proceed with renaming process.
-                new_filename = new_filename + file_extension;
+                new_filename = new_filename + FILE_EXTENSION;
             }
             // if new_filename contains another file extension than ".ivry", quit renaming process.
             else {
@@ -411,9 +417,9 @@ public class BixDB implements AutoCloseable, Serializable{
         }
 
         // validating param, checking if new_filename is null or contains any file_separators.
-        if (!new_filename.contains(file_separator)){
+        if (!new_filename.contains(FILE_SEPARATOR)){
             // creating a File object with the new filename.
-            File new_file = new File(FILE_LOCATION.getParent() + file_separator + new_filename);
+            File new_file = new File(FILE_LOCATION.getParent() + FILE_SEPARATOR + new_filename);
 
             // if a file with the new filename already exists, abort file renaming operation.
             if(!new_file.exists()){
