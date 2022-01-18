@@ -188,72 +188,12 @@ class Handler {
     } // authenticateUser()
 
     /**
-     * Gets the Master Password from the user in a secure manner.
-     * Precautions are taken to prevent the Master Password from being leaked.
-     */
-    static char[] getMasterPasswordFromUser(){
-        System.out.print("\n > Enter Master Password: ");
-        return console.readPassword(); // Getting the password from user.
-    } // getMasterPasswordFromUser()
-
-    /**
      * Clear character arrays from memory by setting its elements to null characters.
      */
     static void clearCharArrayFromMemory(char[] char_array){
         // Setting every character in the array to null character('\0') using Arrays.fill().
         Arrays.fill(char_array,'\0');
     } // clearCharArrayFromMemory()
-
-    /**
-     * Retrieves Account login credentials requested by the user.
-     */
-    static void retrieveAccountLogin(){
-        System.out.println("\nRetrieve Account Login Credentials");
-
-        // Boolean to indicate if the account has been found.
-        boolean account_retrieved = false;
-
-        // ArrayList that stores all the accounts that contain the keyword entered by the user.
-        ArrayList<String> search_results;
-
-        // Loop will keep running till an account is found.
-        do{
-            System.out.print("\n > Enter Account Name: ");
-            String keyword = SCANNER.nextLine().trim().toUpperCase(Locale.ROOT);
-            // Finding all account names containing the keyword.
-            search_results = getAccountNamesContaining(keyword);
-
-            switch(search_results.size()) {
-                // No account name contains the keyword.
-                case 0:
-                    System.out.printf("\nBix could not find an Account Name containing \"%s\".\n", keyword);
-                    break;
-
-                // Only one account name contains the keyword, retrieve the information for that account.
-                case 1:
-                    printCredentialsFor(search_results.get(0));
-                    account_retrieved = true;
-                    break;
-
-                // Two or more account names contain the keyword, display them and ask the user choose one.
-                default:
-                    try{
-                        for(int index = 0 ; index < search_results.size() ; index++){
-                            // Printing the account names along with an index number.
-                            System.out.printf("[%d] %s \n", index, search_results.get(index));
-                        }
-                        System.out.print("Choose an Account to view (enter the number inside [ ]): ");
-                        printCredentialsFor(search_results.get(Integer.parseInt(SCANNER.next().trim())));
-                        account_retrieved = true;
-                    }
-                    catch(Exception e){
-                        clearScreen();
-                        System.out.println("The option you entered is invalid. Try again.");
-                    }
-                    break;
-            } // switch
-        }while(!account_retrieved);
-    } // retrieveAccountLogin()
 
     /**
      * Finds account names that contain or match the keyword provided.
@@ -335,7 +275,7 @@ class Handler {
         catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
     } // sleep()
 
-    private static void clearScreen () { // clears terminal and console
+    static void clearScreen() { // clears terminal and console
         try {
             if (System.getProperty("os.name").contains("Windows"))
                 new ProcessBuilder("cmd", "/c", "cls").inheritIO().start().waitFor();
