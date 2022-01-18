@@ -1,16 +1,19 @@
 package com.cookiecrumbs19212.bix;
 
+import java.io.Console;
+import java.util.ArrayList;
+import java.util.Locale;
 import java.util.Scanner;
 
 class Bix {
     private static final Scanner SCANNER = new Scanner(System.in); // creating scanner object.
-
+    private static final Console CONSOLE = System.console(); // creating console object
     public static void main(String[] args){
         // Running the Bix setup.
         Handler.setup();
 
         // Authenticate User.
-        char[] master_password = Handler.getMasterPasswordFromUser(); // get the master password securely.
+        char[] master_password = getMasterPasswordFromUser(); // get the master password securely.
         Handler.authenticateUser(master_password); // authenticate.
 
         // Bix Menu loop.
@@ -45,11 +48,63 @@ class Bix {
 
             // Evaluating based on the menu option entered by the user.
             switch (user_menu_choice) {
-                case '1': // retrieve login information for an account.
-                    Handler.retrieveAccountLogin();
+
+                // retrieve login information for an account.
+                case '1':
+                    System.out.println("\nRetrieve Account Login Credentials");
+
+                    // Boolean to indicate if the account has been found.
+                    boolean account_retrieved = false;
+
+                    // ArrayList that stores all the accounts that contain the keyword entered by the user.
+                    ArrayList<String> search_results;
+
+                    // Loop will keep running till an account is found.
+                    do{
+                        System.out.print("\n > Enter Account Name: ");
+                        String keyword = SCANNER.nextLine().trim().toUpperCase(Locale.ROOT);
+                        // Finding all account names containing the keyword.
+                        search_results = Handler.getAccountNamesContaining(keyword);
+
+                        switch(search_results.size()) {
+                            // No account name contains the keyword.
+                            case 0:
+                                System.out.printf("\nBix could not find an Account Name containing \"%s\".\n", keyword);
+                                break;
+
+                            // Only one account name contains the keyword, retrieve the information for that account.
+                            case 1:
+                                Handler.printCredentialsFor(search_results.get(0));
+                                account_retrieved = true;
+                                break;
+
+                            // Two or more account names contain the keyword, display them and ask the user to choose one.
+                            default:
+                                try{
+                                    // Printing the account names along with an index number.
+                                    for(int index = 0 ; index < search_results.size() ; index++){
+                                        System.out.printf("[%d] %s \n", index, search_results.get(index));
+                                    }
+                                    // Asking the user to choose one of the displayed Accounts.
+                                    System.out.print("\nChoose an Account to view (enter the number inside [ ]): ");
+                                    int user_choice = Integer.parseInt(SCANNER.next().trim()); // getting the user choice.
+
+                                    // Printing the credentials.
+                                    Handler.printCredentialsFor(search_results.get(user_choice));
+                                    account_retrieved = true;
+                                }
+                                // If the user enters an invalid choice.
+                                catch(Exception e){
+                                    Handler.clearScreen();
+                                    System.out.println("The option you entered is invalid. Try again.");
+                                }
+                                break;
+                        } // switch
+                    }while(!account_retrieved);
                     break;
 
-                case '2': // create a new account login entry
+                // create a new account login entry
+                case '2':
                     Handler.addAccountLogin();
                     break;
 
@@ -96,15 +151,12 @@ class Bix {
     }// getUsernameFromSystem()
 
     /**
-     * Clears the console screen.
+     * Gets the Master Password from the user in a secure manner.
+     * Precautions are taken to prevent the Master Password from being leaked.
      */
-    private static void clearScreen(){ // clears terminal and console
-        try {
-            if (System.getProperty("os.name").contains("Windows"))
-                new ProcessBuilder("cmd", "/c", "cls").inheritIO().start().waitFor();
-            else
-                System.out.print("\033\143");
-        } catch (Exception e) {e.printStackTrace();}
-    } // clearScreen()
+    private static char[] getMasterPasswordFromUser(){
+        System.out.print("\n > Enter Master Password: ");
+        return CONSOLE.readPassword(); // Getting the password from user.
+    } // getMasterPasswordFromUser()
 
 } // class Bix
