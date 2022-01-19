@@ -34,7 +34,10 @@ public enum ExitCode {
     // 3. Authentication Failure.
     UNKNOWN_AUTHENTICATION_ERROR(300, "An unknown error occurred during User Authentication."),
 
-    AUTHENTICATION_FAILED(310, "User Authentication Failed.");
+    AUTHENTICATION_FAILED(310, "User Authentication Failed."),
+
+    // 4. Idle Session Timeout.
+    TERMINATE_IDLE_SESSION(400, "Bix session terminated due to inactivity.");
     //--------------------------------------------------------------------------------------------
 
     private final int exit_code;
