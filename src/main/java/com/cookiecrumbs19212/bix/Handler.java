@@ -21,7 +21,6 @@ class Handler {
     private static Console console; // System console reference.
     private static char[] MASTER_PASSWORD; // global char[] to store and access Master Password; must be cleared from memory before session end.
     private static int CREDENTIAL_DISPLAY_TIMEOUT; // duration that credentials are displayed in seconds.
-    private static final Scanner SCANNER = new Scanner(System.in);
 
     Handler() {
         // Creating a Properties object to parse the config.properties file.
@@ -106,10 +105,8 @@ class Handler {
         String first_input,second_input; // stores the user's input
 
         // Get the new Master Password from user.
-        System.out.print("\n > Enter your new Master Password (1st time) : ");
-        first_input = SCANNER.next().trim();
-        System.out.print("\n > Enter your new Master Password (2nd time) : ");
-        second_input = SCANNER.next().trim();
+        first_input = Reader.getString("\n > Enter your new Master Password (1st time) : ");
+        second_input = Reader.getString("\n > Enter your new Master Password (2nd time) : ");
 
         // Clearing the interface.
         clearScreen();
@@ -235,7 +232,8 @@ class Handler {
      * @param prompt Prompt to find account names containing a specific String.
      *               Prints all account names when set to {@code null}.
      */
-    static void printAccountNames (String prompt) { // prints out a list of names of all accounts stored in credentials.csv
+    static void printAccountNames (String prompt) {
+        // If prompt is null, print all account names.
         if (prompt==null) {
             try (BufferedReader br = new BufferedReader(new FileReader(IVRY_FILE))) {
                 String line;
@@ -248,7 +246,7 @@ class Handler {
 
             } // try
             catch (IOException e) { e.printStackTrace(); }
-        } // auth_success
+        }
     } // printAccountNamesList()
 
     static boolean accountExists (String account_name){ // returns true if the account exists in credentials.csv
@@ -291,8 +289,6 @@ class Handler {
     static void terminateSession(ExitCode exit_code) {
         // Reassurance that the Master Password will always be cleared from the memory.
         clearCharArrayFromMemory(MASTER_PASSWORD);
-        // Closing the Scanner stream.
-        SCANNER.close();
 
         // Clearing the console.
         clearScreen();
@@ -404,12 +400,11 @@ class Handler {
             // If not a password.
             else {
                 // reading user input
-                System.out.print("\n > Enter " + data_name + ": ");
-                String user_input = SCANNER.nextLine().trim();
+                String user_input = Reader.getString("\n > Enter " + data_name + ": ");
 
                 // Confirming user's input.
-                System.out.print("\n *> Confirm this " + data_name + "? [Y]/[n]: ");
-                if (SCANNER.nextLine().trim().toLowerCase().charAt(0) == 'y')
+                if (Reader.getString("\n *> Confirm this " + data_name + "? [Y]/[n]: "
+                                        ).toLowerCase().charAt(0) == 'y')
                     return user_input; // return the value if user confirms.
             }
         } while (true); // endless loop. return statements will take care of exit.
