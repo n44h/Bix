@@ -61,7 +61,6 @@ class Handler {
         console = System.console(); // attaching variable to the system console.
         if (console == null)
             terminateSession(ExitCode.CONSOLE_NOT_FOUND);
-        CREDENTIAL_DISPLAY_TIMEOUT = 15; // Setting session timeout to 15 seconds.
         //verifyFileExists();
 
         // retrieve the SHA256 hash of the master key stored in the credentials.csv file
@@ -87,11 +86,17 @@ class Handler {
                 /* If initial setup was successful, set the "initial_setup_property" as false
                    to prevent setup procedure from redundantly running again in the future. */
                     bix_properties.setProperty("initial_setup_required", "false");
-                } else {
-                    System.out.println("\nBix Setup Failed.\n");
-                    terminateSession(ExitCode.MASTER_PASSWORD_SETUP_FAILED);
                 }
+                else
+                    terminateSession(ExitCode.MASTER_PASSWORD_SETUP_FAILED);
             }
+
+            // Loading the CREDENTIAL_DISPLAY_TIMEOUT.
+            CREDENTIAL_DISPLAY_TIMEOUT = Integer.parseInt(bix_properties.getProperty("credential_display_duration"));
+
+            // Setting the idle_timeout in the Reader class.
+            Reader.setIdleTimeout(Integer.parseInt(bix_properties.getProperty("idle_session_timeout")));
+
         } catch (Exception e) {
             e.printStackTrace();
         }
