@@ -3,14 +3,19 @@ package com.cookiecrumbs19212.bix;
 import java.io.Console;
 import java.util.ArrayList;
 import java.util.Locale;
-import java.util.Scanner;
 
 class Bix {
-    private static final Scanner SCANNER = new Scanner(System.in); // creating scanner object.
     private static final Console CONSOLE = System.console(); // creating console object
     public static void main(String[] args){
         // Running the Bix setup.
         Handler.setup();
+
+        // Greet user.
+        Handler.clearScreen();
+        System.out.printf("""
+                           Hello, %s!
+                           This is Bix, your Password Manager.
+                           """, getUsernameFromSystem()); // getUsernameFromSystem() gets the name of the current user.
 
         // Authenticate User.
         char[] master_password = getMasterPasswordFromUser(); // get the master password securely.
@@ -19,13 +24,9 @@ class Bix {
         // Bix Menu loop.
         char user_menu_choice;
         do {
-            // Getting menu option from the user.
-            System.out.printf("""
-
-                     Hello, %s!
-                     This is Bix, your Account Manager!
-
-                     Choose a menu option:
+            // Printing menu options.
+            System.out.print("""
+                    Bix Menu:
 
                     \t[1] Find an Account
 
@@ -37,14 +38,14 @@ class Bix {
 
                     \t[5] Import/Export a CSV vault file
                     
-                    \t[6] Help and About Bix
+                    \t[6] Bix Settings
 
                     \t[X] Exit Bix
-
-                     > Enter Menu option:\s""", getUsernameFromSystem()); // getUsernameFromSystem() gets the name of the current user.
+                    
+                    """);
 
             // Reading user's menu choice.
-            user_menu_choice = SCANNER.nextLine().trim().toUpperCase().charAt(0);
+            user_menu_choice = Reader.getChar("> Enter Menu option: ");
 
             // Evaluating based on the menu option entered by the user.
             switch (user_menu_choice) {
@@ -59,10 +60,12 @@ class Bix {
                     // ArrayList that stores all the accounts that contain the keyword entered by the user.
                     ArrayList<String> search_results;
 
+                    // Displaying all stored account names.
+                    Handler.printAccountNames(null);
+
                     // Loop will keep running till an account is found.
                     do{
-                        System.out.print("\n > Enter Account Name: ");
-                        String keyword = SCANNER.nextLine().trim().toUpperCase(Locale.ROOT);
+                        String keyword = Reader.getString("\n > Enter Account Name: ").toUpperCase(Locale.ROOT);
                         // Finding all account names containing the keyword.
                         search_results = Handler.getAccountNamesContaining(keyword);
 
@@ -86,8 +89,8 @@ class Bix {
                                         System.out.printf("[%d] %s \n", index, search_results.get(index));
                                     }
                                     // Asking the user to choose one of the displayed Accounts.
-                                    System.out.print("\nChoose an Account to view (enter the number inside [ ]): ");
-                                    int user_choice = Integer.parseInt(SCANNER.next().trim()); // getting the user choice.
+                                    int user_choice = Reader.getInt(
+                                                    "\nChoose an Account to view (enter the number inside [ ]): ");
 
                                     // Printing the credentials.
                                     Handler.printCredentialsFor(search_results.get(user_choice));
@@ -127,8 +130,6 @@ class Bix {
         }while(user_menu_choice != 'X');
 
         // Terminating the Bix session.
-        System.out.println("\nTerminating Bix session...");
-        SCANNER.close(); // closing scanner
         Handler.terminateSession(ExitCode.SAFE_TERMINATION);
 
     } // main()
