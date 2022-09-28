@@ -1,6 +1,7 @@
-package com.cookiecrumbs19212.bix;
+package com.bix;
 
 import java.io.*;
+import java.io.Reader;
 import java.net.URL;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
@@ -95,7 +96,7 @@ class Handler {
             CREDENTIAL_DISPLAY_TIMEOUT = Integer.parseInt(bix_properties.getProperty("credential_display_duration"));
 
             // Setting the idle_timeout in the Reader class.
-            Reader.setIdleTimeout(Integer.parseInt(bix_properties.getProperty("idle_session_timeout")));
+            java.io.Reader.setIdleTimeout(Integer.parseInt(bix_properties.getProperty("idle_session_timeout")));
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -110,8 +111,8 @@ class Handler {
         String first_input,second_input; // stores the user's input
 
         // Get the new Master Password from user.
-        first_input = Reader.getString("\n > Enter your new Master Password (1st time) : ");
-        second_input = Reader.getString("\n > Enter your new Master Password (2nd time) : ");
+        first_input = java.io.Reader.getString("\n > Enter your new Master Password (1st time) : ");
+        second_input = java.io.Reader.getString("\n > Enter your new Master Password (2nd time) : ");
 
         // Clearing the interface.
         clearScreen();
@@ -405,7 +406,7 @@ class Handler {
             // If not a password.
             else {
                 // reading user input
-                String user_input = Reader.getString("\n > Enter " + data_name + ": ");
+                String user_input = java.io.Reader.getString("\n > Enter " + data_name + ": ");
 
                 // Confirming user's input.
                 if (Reader.getString("\n *> Confirm this " + data_name + "? [Y]/[n]: "

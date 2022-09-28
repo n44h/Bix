@@ -186,7 +186,7 @@ public class BixDB implements AutoCloseable, Serializable{
     } // constructor IvoryDatabase(File)
 
     /**
-     * @return The vault size of the BixDB object. Vault size is the number of account entries stored in the vault.
+     * @return The vault size of the com.bix.BixDB object. Vault size is the number of account entries stored in the vault.
      */
     public int getVaultSize(){
         return vault_size;

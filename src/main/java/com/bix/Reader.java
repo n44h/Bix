@@ -1,4 +1,4 @@
-package com.cookiecrumbs19212.bix;
+package com.bix;
 
 import java.util.Scanner;
 import java.util.Timer;

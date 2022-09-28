@@ -1,4 +1,4 @@
-package com.cookiecrumbs19212.bix;
+package com.bix;
 
 public enum AESFlavor {
     AES_128(128),
