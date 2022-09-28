@@ -405,7 +405,7 @@ public class BixDB implements AutoCloseable, Serializable{
         // checking if new_filename does not contain the file extension ".ivry".
         if (!new_filename.endsWith(FILE_EXTENSION)){
             // if ".ivry" does not exist in the new_filename, check if any other file extension exists.
-            if (!new_filename.contains(".")) {
+            if (!new_filename.contains("")) {
                 // if no other file extension exists, append ".ivry" to the new_filename
                 // and proceed with renaming process.
                 new_filename = new_filename + FILE_EXTENSION;
