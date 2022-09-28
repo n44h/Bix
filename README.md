@@ -1,11 +1,6 @@
-# Bix_Password_Manager
+# Bix
 
-### **Bix Development Status Indicator:** 🔴
-🔴: Fatal flaws or bugs detected in the current release.<br/>
-🔵: New update in development.<br/>
-🟢: Healthy release.<br/>
-
-**ATTENTION:** DO NOT USE THIS CODE. THIS REPO IS STILL IN DEVELOPMENT, IT IS INFESTED WITH BUGS AND DESIGN FLAWS.
+![Bix Health](https://img.shields.io/static/v1?label=Bix%20health%20indicator&message=bugs%20detected&color=cc0000&style=for-the-badge)
 
 ## What is Bix?
 
