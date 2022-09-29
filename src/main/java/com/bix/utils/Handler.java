@@ -1,35 +1,37 @@
 package com.bix.utils;
 
 import com.bix.enums.AESFlavor;
-import com.bix.enums.ExitCode;
+import com.bix.enums.StatusCode;
 
 import java.io.*;
 import java.net.URL;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Locale;
+import java.util.Properties;
 
 import static com.bix.utils.Crypto.*;
 import static com.bix.utils.Reader.*;
 
+
 /**
- * This is an object class that handles reading and writing in .csv files
- * This class also encrypts and decrypts data from .csv files
+ * This class handles all the backend operations of Bix.
  */
 public class Handler {
-    private static Properties bix_properties;
-    private static String IVRY_FILE; // stores the path to the location where the csv file is stored
+    private static Properties BIX_PROPERTIES;
+    private static String VAULT_FILE; // stores the path to the location where the csv file is stored
     private static String HASH_FILE; // stores the path to the location where the master key hash file is stored
-    private static String MASTER_PASSWORD_HASH; // stores the SHA256 hash of the master key
-    private static boolean auth_success; // FALSE by default, turns TRUE if the user authentication is successful
-    private static int AES_flavor; // can be set to 128-bit, 192-bit or 256-bit.
-    private static int vault_size;
-    private static String[] account_names; // stores the stored account names.
-    private static Console console; // System console reference.
+    private static String MASTER_PASSWORD_HASH; // stores the SHA256 hash of the master key.
+    private static boolean auth_success; // FALSE by default, turns TRUE if the user authentication is successful.
+    private static int AES_FLAVOR; // Can represent AES-128, AES-192, or AES-256.
+    private static String[] account_names; // Stores the stored account names.
+    private static Console CONSOLE; // System console reference.
     private static char[] MASTER_PASSWORD; // global char[] to store and access Master Password; must be cleared from memory before session end.
     private static int CREDENTIAL_DISPLAY_TIMEOUT; // duration that credentials are displayed in seconds.
 
     public Handler() {
         // Creating a Properties object to parse the bix.properties file.
-        bix_properties = new Properties();
+        BIX_PROPERTIES = new Properties();
 
         // Filename of the properties file.
         String properties_filename = "bix.properties";
@@ -39,19 +41,19 @@ public class Handler {
             InputStream resource_file_input_stream = getClass().getClassLoader().getResourceAsStream(properties_filename);
 
             // Loading the properties into bix_properties.
-            bix_properties.load(resource_file_input_stream);
+            BIX_PROPERTIES.load(resource_file_input_stream);
         }
         catch (IOException ioe) {
             ioe.printStackTrace();
-            terminateSession(ExitCode.ERROR_ACCESSING_PROPERTY_FILE);
+            terminateSession(StatusCode.ERROR_ACCESSING_PROPERTY_FILE);
         }
         catch (NullPointerException ne){
             ne.printStackTrace();
-            terminateSession(ExitCode.PROPERTY_FILE_NOT_FOUND);
+            terminateSession(StatusCode.PROPERTY_FILE_NOT_FOUND);
         }
         catch (Exception e) {
             e.printStackTrace();
-            terminateSession(ExitCode.UNKNOWN_RESOURCE_ERROR);
+            terminateSession(StatusCode.UNKNOWN_RESOURCE_ERROR);
         }
 
         /*
@@ -66,13 +68,13 @@ public class Handler {
                 */
         MASTER_PASSWORD = null; // will be null until the user has been successfully authenticated.
         HASH_FILE = "/mkhash.txt";
-        AES_flavor = AESFlavor.AES_128.toInteger(); // default AES flavor is 128 bit.
+        AES_FLAVOR = AESFlavor.AES_128.toInteger(); // default AES flavor is 128 bit.
         auth_success = false;
-        vault_size = Integer.parseInt(bix_properties.getProperty("vault_size"));
+        vault_size = Integer.parseInt(BIX_PROPERTIES.getProperty("vault_size"));
         account_names = new String[vault_size];
-        console = System.console(); // attaching variable to the system console.
-        if (console == null)
-            terminateSession(ExitCode.CONSOLE_NOT_FOUND);
+        CONSOLE = System.console(); // attaching variable to the system console.
+        if (CONSOLE == null)
+            terminateSession(StatusCode.CONSOLE_NOT_FOUND);
         //verifyFileExists();
 
         // retrieve the SHA256 hash of the master key stored in the credentials.csv file
@@ -92,22 +94,22 @@ public class Handler {
         File config_file = new File("something idk yet");
         try {
             // If this is the first time opening Bix, do the initial setup.
-            if (Boolean.parseBoolean(bix_properties.getProperty("initial_setup_required"))) {
+            if (Boolean.parseBoolean(BIX_PROPERTIES.getProperty("initial_setup_required"))) {
                 // Step 1: Set up the Master Password.
                 if (setMasterPassword()) {
                 /* If initial setup was successful, set the "initial_setup_property" as false
                    to prevent setup procedure from redundantly running again in the future. */
-                    bix_properties.setProperty("initial_setup_required", "false");
+                    BIX_PROPERTIES.setProperty("initial_setup_required", "false");
                 }
                 else
-                    terminateSession(ExitCode.MASTER_PASSWORD_SETUP_FAILED);
+                    terminateSession(StatusCode.MASTER_PASSWORD_SETUP_FAILED);
             }
 
             // Loading the CREDENTIAL_DISPLAY_TIMEOUT.
-            CREDENTIAL_DISPLAY_TIMEOUT = Integer.parseInt(bix_properties.getProperty("credential_display_duration"));
+            CREDENTIAL_DISPLAY_TIMEOUT = Integer.parseInt(BIX_PROPERTIES.getProperty("credential_display_duration"));
 
             // Setting the idle_timeout in the Reader class.
-            setIdleTimeout(Integer.parseInt(bix_properties.getProperty("idle_session_timeout")));
+            setIdleTimeout(Integer.parseInt(BIX_PROPERTIES.getProperty("idle_session_timeout")));
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -144,13 +146,13 @@ public class Handler {
      * @param flavor The desired AES flavor to be set as the working flavor.
      */
     public static void setAESFlavor(AESFlavor flavor){
-        AES_flavor = flavor.toInteger();
+        AES_FLAVOR = flavor.toInteger();
     }
 
     private void verifyFileExists() { // method to check if the required csv and hash files exist
         boolean file_located = true; // turns false if one of the files is not found
 
-        File csv_file = new File(IVRY_FILE);
+        File csv_file = new File(VAULT_FILE);
         if (!csv_file.exists()) { // checking if csv file exists
             System.out.println("\nERROR: Failed to locate credentials.csv in filepath.");
             file_located = false;
@@ -160,7 +162,7 @@ public class Handler {
             System.out.println("\nERROR: Failed to locate mkhash.txt in filepath.");
             file_located = false;
         }
-        if (!file_located) { terminateSession(ExitCode.VAULT_FILE_NOT_FOUND); }
+        if (!file_located) { terminateSession(StatusCode.VAULT_FILE_NOT_FOUND); }
 
     } //verifyFile()
 
@@ -180,7 +182,7 @@ public class Handler {
         }
         // Failed authentication.
         else {
-            terminateSession(ExitCode.AUTHENTICATION_FAILED);
+            terminateSession(StatusCode.AUTHENTICATION_FAILED);
         }
 
         // Clear the input char[] from the memory.
@@ -224,7 +226,7 @@ public class Handler {
      * Loads the account names from the credentials.csv file to memory for quicker access.
      */
     private static void loadAccountNames (){
-        try (BufferedReader br = new BufferedReader(new FileReader(IVRY_FILE))) {
+        try (BufferedReader br = new BufferedReader(new FileReader(VAULT_FILE))) {
             int index = 0;
             String line;
             while ((line = br.readLine()) != null) {
@@ -246,7 +248,7 @@ public class Handler {
     public static void printAccountNames (String prompt) {
         // If prompt is null, print all account names.
         if (prompt==null) {
-            try (BufferedReader br = new BufferedReader(new FileReader(IVRY_FILE))) {
+            try (BufferedReader br = new BufferedReader(new FileReader(VAULT_FILE))) {
                 String line;
                 System.out.println("\nStored Accounts: ");
                 while ((line = br.readLine()) != null) {
@@ -263,7 +265,7 @@ public class Handler {
     public static boolean accountExists (String account_name){ // returns true if the account exists in credentials.csv
         if (auth_success) {
             account_name = account_name.toUpperCase(); // since the account names are stored in uppercase in csv file
-            try (BufferedReader br = new BufferedReader(new FileReader(IVRY_FILE))) {
+            try (BufferedReader br = new BufferedReader(new FileReader(VAULT_FILE))) {
                 String line;
                 while ((line = br.readLine()) != null) {
                     String[] values = line.split(","); // split up values in the line and store in String array
@@ -295,19 +297,20 @@ public class Handler {
 
     /**
      * Terminates the current Bix session.
-     * @param exit_code The appropriate exit code from enum {@code ExitCode}.
+     * @param status The appropriate status code from enum {@code StatusCode}.
      */
-    public static void terminateSession(ExitCode exit_code) {
+    public static void terminateSession(StatusCode status) {
         // Reassurance that the Master Password will always be cleared from the memory.
         clearCharArrayFromMemory(MASTER_PASSWORD);
 
         // Clearing the console.
         clearScreen();
-        // Displaying the exit message depending on the exit code.
-        System.out.printf("\n%s\nTerminating Bix session.",exit_code.getMessage());
-        // Terminating the session.
-        System.exit(exit_code.getExitCode());
 
+        // Displaying the status message.
+        System.out.printf("\n%s\nTerminating Bix session.", status.getMessage());
+
+        // Terminating the session.
+        System.exit(status.getStatusCode());
     } // terminateSession()
 
     /*-----------------------------------------------------------------------------------------*/
@@ -319,7 +322,7 @@ public class Handler {
          */
 
         String[] values = null; // to store each value of a comma separated value line
-        try (BufferedReader br = new BufferedReader(new FileReader(IVRY_FILE))) {
+        try (BufferedReader br = new BufferedReader(new FileReader(VAULT_FILE))) {
             String line;
             while ((line = br.readLine()) != null) {
                 values = line.split(","); // split up values in the line and store in String array
@@ -338,12 +341,12 @@ public class Handler {
 
         // comparing hash values of user entered password and hash stored in csv file
         // Authenticating the key generated from the master password and salt to the target hash values[4].
-        if (!authenticateSecretKey(new String(MASTER_PASSWORD), salt, AES_flavor, values[4])) {
-            terminateSession(ExitCode.AUTHENTICATION_FAILED);
+        if (!authenticateSecretKey(new String(MASTER_PASSWORD), salt, AES_FLAVOR, values[4])) {
+            terminateSession(StatusCode.AUTHENTICATION_FAILED);
         }
 
         // Decrypting ciphertext.
-        String plaintext = decrypt(ciphertext, new String(MASTER_PASSWORD), salt, iv, AES_flavor);
+        String plaintext = decrypt(ciphertext, new String(MASTER_PASSWORD), salt, iv, AES_FLAVOR);
 
 
         // Print credentials to Terminal.
@@ -369,17 +372,17 @@ public class Handler {
             System.out.println("\nAuthentication successful.");
         }
         else {
-            terminateSession(ExitCode.AUTHENTICATION_FAILED);
+            terminateSession(StatusCode.AUTHENTICATION_FAILED);
         }
 
         // creating new csv line entry
         String plaintext = username + " " + password;
-        String new_csv_entry = account_name + "," + encrypt(plaintext, new String(MASTER_PASSWORD), AES_flavor);
+        String new_csv_entry = account_name + "," + encrypt(plaintext, new String(MASTER_PASSWORD), AES_FLAVOR);
 
         // writing to csv file
         FileWriter csvWriter;
         try {
-            csvWriter = new FileWriter(IVRY_FILE, true);
+            csvWriter = new FileWriter(VAULT_FILE, true);
             csvWriter.append(new_csv_entry);
             csvWriter.append("\n");
 
@@ -389,36 +392,47 @@ public class Handler {
 
         // Print success message.
         System.out.println("Securely stored account credentials.");
-        //terminateSession(ExitCode.SAFE_TERMINATION);
+        //terminateSession(StatusCode.SAFE_TERMINATION);
 
     } // createAccountLogin()
 
-    private static String getInput(String data_name){
+    private static String getInput(String dataName) {
+        /* The following do while loop is an infinite loop.
+         *
+         * This is so that if the user does not give a positive response for their input confirmation, the loop will
+         * start over again which allows the input to be provided again.
+         *
+         * Once a positive response for the input confirmation is received from the user, the return statement will
+         * effectively terminate the loop and the function call.
+         */
         do {
             // If the input is a password.
-            if(data_name.toUpperCase(Locale.ROOT).contains("PASSWORD")){
-                System.out.print("\n > Enter " + data_name + " (1st time): ");
-                char[] password_1 = console.readPassword();
-                System.out.print("\n > Enter " + data_name + " (2nd time): ");
-                char[] password_2 = console.readPassword();
+            if (dataName.toUpperCase(Locale.ROOT).contains("PASSWORD")) {
 
-                // Checking to see if the user entered the same password both times.
-                if(password_1 == password_2)
-                    return new String(password_1); // if they match, then return password_1 as a String.
+                // Get Password first time.
+                System.out.print("\n > Enter " + dataName + " (1st time): ");
+                char[] password1 = CONSOLE.readPassword();
+
+                // Get Password second time.
+                System.out.print("\n > Enter " + dataName + " (2nd time): ");
+                char[] password2 = CONSOLE.readPassword();
+
+                // Ensure the first and second password entries match.
+                if (password1 == password2)
+                    return new String(password1); // if they match, then return password1 as a String.
                 else // if they do not match.
-                    System.out.printf("\nThe %s you entered the 2nd time did not match the 1st one. Please try again.\n", data_name);
+                    System.out.printf("\nThe %s inputs do not match. Please try again.\n", dataName);
             }
-            // If not a password.
+            // If input type is not password.
             else {
                 // reading user input
-                String user_input = readString("\n > Enter " + data_name + ": ");
+                String userInput = readString(String.format("> Enter %s: ", dataName));
 
                 // Confirming user's input.
-                if (readString("\n *> Confirm this " + data_name + "? [Y]/[n]: "
+                if (readString("\n *> Confirm this " + dataName + "? [Y]/[n]: "
                                         ).toLowerCase().charAt(0) == 'y')
-                    return user_input; // return the value if user confirms.
+                    return userInput; // return the value if user confirms.
             }
         } while (true); // endless loop. return statements will take care of exit.
-
     } // getInput()
 } // class
