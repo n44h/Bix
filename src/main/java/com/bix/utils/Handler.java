@@ -5,10 +5,10 @@ import com.bix.enums.ExitCode;
 
 import java.io.*;
 import java.net.URL;
-import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
 import static com.bix.utils.Crypto.*;
+import static com.bix.utils.Reader.*;
 
 /**
  * This is an object class that handles reading and writing in .csv files
@@ -28,25 +28,32 @@ public class Handler {
     private static int CREDENTIAL_DISPLAY_TIMEOUT; // duration that credentials are displayed in seconds.
 
     public Handler() {
-        // Creating a Properties object to parse the config.properties file.
+        // Creating a Properties object to parse the bix.properties file.
         bix_properties = new Properties();
+
         // Filename of the properties file.
-        String properties_filename = "config.properties";
+        String properties_filename = "bix.properties";
+
         try {
             // Creating an input stream object of the properties file which is in the Resource folder.
             InputStream resource_file_input_stream = getClass().getClassLoader().getResourceAsStream(properties_filename);
+
             // Loading the properties into bix_properties.
             bix_properties.load(resource_file_input_stream);
-        } catch (IOException ioe) {
+        }
+        catch (IOException ioe) {
             ioe.printStackTrace();
             terminateSession(ExitCode.ERROR_ACCESSING_PROPERTY_FILE);
-        } catch (NullPointerException ne){
+        }
+        catch (NullPointerException ne){
             ne.printStackTrace();
             terminateSession(ExitCode.PROPERTY_FILE_NOT_FOUND);
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             e.printStackTrace();
             terminateSession(ExitCode.UNKNOWN_RESOURCE_ERROR);
         }
+
         /*
         // finding credentials.csv location
         try {
@@ -100,7 +107,7 @@ public class Handler {
             CREDENTIAL_DISPLAY_TIMEOUT = Integer.parseInt(bix_properties.getProperty("credential_display_duration"));
 
             // Setting the idle_timeout in the Reader class.
-            Reader.setIdleTimeout(Integer.parseInt(bix_properties.getProperty("idle_session_timeout")));
+            setIdleTimeout(Integer.parseInt(bix_properties.getProperty("idle_session_timeout")));
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -115,8 +122,8 @@ public class Handler {
         String first_input,second_input; // stores the user's input
 
         // Get the new Master Password from user.
-        first_input = Reader.readString("\n > Enter your new Master Password (1st time) : ");
-        second_input = Reader.readString("\n > Enter your new Master Password (2nd time) : ");
+        first_input = readString("\n > Enter your new Master Password (1st time) : ");
+        second_input = readString("\n > Enter your new Master Password (2nd time) : ");
 
         // Clearing the interface.
         clearScreen();
@@ -330,20 +337,14 @@ public class Handler {
         String iv = values[3];
 
         // comparing hash values of user entered password and hash stored in csv file
-        try {
-            if (!generateKeyAndGetHash(new String(MASTER_PASSWORD), salt, AES_flavor).equals(values[4])) { // checking if hash values match
-                terminateSession(ExitCode.AUTHENTICATION_FAILED);
-            }
-        } catch (NoSuchAlgorithmException e) { e.printStackTrace(); }
+        // Authenticating the key generated from the master password and salt to the target hash values[4].
+        if (!authenticateSecretKey(new String(MASTER_PASSWORD), salt, AES_flavor, values[4])) {
+            terminateSession(ExitCode.AUTHENTICATION_FAILED);
+        }
 
         // Decrypting ciphertext.
-        String plaintext = null;
-        try {
-            plaintext = decrypt(ciphertext, new String(MASTER_PASSWORD), salt, iv, AES_flavor);
-        }
-        catch (Exception e) {
+        String plaintext = decrypt(ciphertext, new String(MASTER_PASSWORD), salt, iv, AES_flavor);
 
-        }
 
         // Print credentials to Terminal.
         System.out.println("\nUsername: " + plaintext.substring(0, plaintext.indexOf(" ")));
@@ -392,7 +393,7 @@ public class Handler {
 
     } // createAccountLogin()
 
-    private static String getInput (String data_name){
+    private static String getInput(String data_name){
         do {
             // If the input is a password.
             if(data_name.toUpperCase(Locale.ROOT).contains("PASSWORD")){
@@ -410,10 +411,10 @@ public class Handler {
             // If not a password.
             else {
                 // reading user input
-                String user_input = Reader.readString("\n > Enter " + data_name + ": ");
+                String user_input = readString("\n > Enter " + data_name + ": ");
 
                 // Confirming user's input.
-                if (Reader.readString("\n *> Confirm this " + data_name + "? [Y]/[n]: "
+                if (readString("\n *> Confirm this " + data_name + "? [Y]/[n]: "
                                         ).toLowerCase().charAt(0) == 'y')
                     return user_input; // return the value if user confirms.
             }
