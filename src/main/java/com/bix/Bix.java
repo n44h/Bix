@@ -4,7 +4,7 @@ import java.io.Console;
 import java.util.ArrayList;
 import java.util.Locale;
 
-import com.bix.enums.ExitCode;
+import com.bix.enums.StatusCode;
 
 import static com.bix.utils.Handler.*;
 import static com.bix.utils.Reader.*;
@@ -135,7 +135,7 @@ public class Bix {
         }while(user_menu_choice != 'X');
 
         // Terminating the Bix session.
-        terminateSession(ExitCode.SAFE_TERMINATION);
+        terminateSession(StatusCode.SAFE_TERMINATION);
 
     } // main()
 

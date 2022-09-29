@@ -1,6 +1,6 @@
 package com.bix.utils;
 
-import com.bix.enums.ExitCode;
+import com.bix.enums.StatusCode;
 
 import java.util.Scanner;
 import java.util.Timer;
@@ -45,7 +45,7 @@ public class Reader {
         @Override
         public void run() {
             SCANNER.close();
-            Handler.terminateSession(ExitCode.TERMINATE_IDLE_SESSION);
+            Handler.terminateSession(StatusCode.TERMINATE_IDLE_SESSION);
         }
     };
 
