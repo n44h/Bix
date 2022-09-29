@@ -1,10 +1,10 @@
 package com.bix.utils;
 
-import com.bix.enums.StatusCode;
-
 import java.util.Scanner;
 import java.util.Timer;
 import java.util.TimerTask;
+
+import com.bix.enums.StatusCode;
 
 /**
  * <p>
@@ -45,7 +45,7 @@ public class Reader {
         @Override
         public void run() {
             SCANNER.close();
-            Handler.terminateSession(StatusCode.TERMINATE_IDLE_SESSION);
+            Handler.terminateSession(StatusCode.IDLE_SESSION_TIMEOUT);
         }
     };
 
@@ -55,7 +55,7 @@ public class Reader {
      * @return {@code String} input from the user.
      */
     public static String readString(String prompt){
-        System.out.print(prompt);
+        System.out.printf("\n%s", prompt);
         startIdleSessionMonitor();
         return SCANNER.nextLine().trim();
     }
@@ -66,7 +66,7 @@ public class Reader {
      * @return {@code char} input from the user.
      */
     public static char readChar(String prompt){
-        System.out.print(prompt);
+        System.out.printf("\n%s", prompt);
         startIdleSessionMonitor();
         return SCANNER.nextLine().trim().charAt(0);
     }
@@ -77,7 +77,7 @@ public class Reader {
      * @return {@code int} input from the user.
      */
     public static int readInt(String prompt){
-        System.out.print(prompt);
+        System.out.printf("\n%s", prompt);
         return SCANNER.nextInt();
     }
 
@@ -115,4 +115,5 @@ public class Reader {
         // Scheduling the idle session termination task again.
         idle_session_timer.schedule(terminate_idle_session_task, idle_timeout);
     } // startIdleSessionTimer()
-} // class
+
+} // class Reader
