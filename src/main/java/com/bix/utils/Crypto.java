@@ -148,19 +148,24 @@ class Crypto {
      * @param algorithm AES flavor: 128, 192, or 256 as int
      *
      * @return {@code SecretKey} object
-     *
-     * @throws NoSuchAlgorithmException if an invalid encryption algorithm is provided
-     *
-     * @throws InvalidKeySpecException if invalid key generation specifications are provided
      */
-    private static SecretKey getSecretKey(String password, byte[] salt, int algorithm)
-            throws NoSuchAlgorithmException, InvalidKeySpecException {
+    private static SecretKey getSecretKey(String password, byte[] salt, int algorithm) {
+        SecretKey secret_key;
+        try {
+            // Create an instance of SecretKeyFactory with Password-Based Key Derivation Function 2 (PBKDF2).
+            SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
 
-        // Create an instance of SecretKeyFactory with Password-Based Key Derivation Function 2 (PBKDF2).
-        SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
-        KeySpec spec = new PBEKeySpec(password.toCharArray(), salt, 65536, algorithm);
+            // Create a Key Specifications object.
+            KeySpec spec = new PBEKeySpec(password.toCharArray(), salt, 65536, algorithm);
 
-        return new SecretKeySpec(factory.generateSecret(spec).getEncoded(), "AES");
+            // Generate the secret key
+            secret_key = new SecretKeySpec(factory.generateSecret(spec).getEncoded(), "AES");
+        }
+        catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
+            throw new RuntimeException(e);
+        }
+
+        return secret_key;
     } // getSecretKey()
 
     /**
@@ -186,32 +191,26 @@ class Crypto {
     }// getKeyHash()
 
     /**
-     * Generates the secret key then gets its SHA256 hash
+     * Compares secret key hash generated from {@code masterKey} and {@code salt} to the {@code target hash}
      *
-     * @param master_key the master password
+     * @param masterKey the master password
      *
      * @param salt the salt as a String
      *
      * @param algorithm AES flavor as an {@code int} 128, 192, or 256
      *
-     * @return the SHA256 hash of the secret key as a String
+     * @return true if the hash of the generated secret key matches the target hash
      */
-    protected static String generateKeyAndGetHash(String master_key, String salt, int algorithm) {
-        // Initialize secret key.
-        SecretKey secret_key = null;
-
+    protected static boolean authenticateSecretKey(String masterKey, String salt, int algorithm, String targetHash) {
         // Generate the secret key.
-        try {
-            secret_key = getSecretKey(master_key, Base64.getDecoder().decode(salt), algorithm);
-        } catch (Exception e) {e.printStackTrace();}
+        SecretKey secretKey = getSecretKey(masterKey, Base64.getDecoder().decode(salt), algorithm);
 
-        assert secret_key != null;
-        return getKeyHash(secret_key);
-    } // generateKeyAndGetHash()
+        // Return true iff secret key is not null, and it is equal to the target hash.
+        return secretKey != null && getKeyHash(secretKey).equals(targetHash);
+    } // authenticateSecretKey()
 
 
     // AES Decryption
-
     /**
      * Decrypts the AES-encrypted ciphertext
      *
@@ -230,23 +229,17 @@ class Crypto {
     protected static String decrypt(String ciphertext, String password, String salt, String iv, int algorithm) {
 
         // Generate secret key object.
-        SecretKey secret_key;
-        try {
-            secret_key = getSecretKey(password, Base64.getDecoder().decode(salt), algorithm);
-        }
-        catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
-            throw new RuntimeException(e);
-        }
+        SecretKey secretKey = getSecretKey(password, Base64.getDecoder().decode(salt), algorithm);
 
         // Initialize IvParameterSpec object.
-        IvParameterSpec iv_object = new IvParameterSpec(Base64.getDecoder().decode(iv));
+        IvParameterSpec ivSpec = new IvParameterSpec(Base64.getDecoder().decode(iv));
 
         // Decrypting ciphertext.
         String plaintext;
         try {
             // Initialize Cipher object.
             Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
-            cipher.init(Cipher.DECRYPT_MODE, secret_key, iv_object);
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, ivSpec);
 
             // Decrypting the ciphertext then converting the resulting byte array to a String.
             plaintext = new String(cipher.doFinal(Base64.getDecoder().decode(ciphertext)));
