@@ -48,33 +48,33 @@ public class Reader {
     };
 
     /**
-     * Method to get a String input from the user.
+     * Method to read a String input from the user.
      * @param prompt The prompt to be printed to the user to get the input.
      * @return {@code String} input from the user.
      */
-    static String getString(String prompt){
+    static String readString(String prompt){
         System.out.print(prompt);
         startIdleSessionMonitor();
         return SCANNER.nextLine().trim();
     }
 
     /**
-     * Method to get a char input from the user.
+     * Method to read a char input from the user.
      * @param prompt The prompt to be printed to the user to get the input.
      * @return {@code char} input from the user.
      */
-    static char getChar(String prompt){
+    static char readChar(String prompt){
         System.out.print(prompt);
         startIdleSessionMonitor();
         return SCANNER.nextLine().trim().charAt(0);
     }
 
     /**
-     * Method to get an integer input from the user.
+     * Method to read an integer input from the user.
      * @param prompt The prompt to be printed to the user to get the input.
      * @return {@code int} input from the user.
      */
-    static int getInt(String prompt){
+    static int readInt(String prompt){
         System.out.print(prompt);
         return SCANNER.nextInt();
     }
