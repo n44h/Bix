@@ -5,21 +5,7 @@
 ## What is Bix?
 
 Bix is a console-based Account Credentials Manager.  
-It encrypts and safely stores account credentials with your choice of AES flavor (128-bit, 192-bit or 256-bit).
-
-
-## Important Definitions
-
-1. `Master Password` : The Master Password is used to encrypt and decrypt the vault where all your account credentials are stored. And so, it is important to keep your Master Password safe.
-
-
-## How are the Credentials stored?
-
-1. The `username` and `password` are appended together and separated by a whitespace to create the `plaintext`. <br/>Hence the `plaintext` will look like this: "`username password`"  
-2. The *PLAINTEXT* is then padded using `PKCS5`.  
-3. Next, the *PLAINTEXT* is encrypted using `AES-128 bit` in `CBC` mode to get the *CIPHERTEXT*.  
-4. Finally, the CIPHERTEXT is encoded in Base64 and stored in the credentials.csv file, along with the ACCOUNT NAME, Initialization Vector (IV), SALT and SHA256 hash of the SECRET KEY.  
-
+It encrypts and safely stores account credentials with your choice of AES flavor (128-bit, 192-bit, or 256-bit).
 
 ## Note
 When it comes to safely storing passwords and other sensitive information, everyone has their own approach; and no matter which "foolproof" method you adopt, there will always be some form of risk involved.  
