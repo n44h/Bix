@@ -45,7 +45,7 @@ class Bix {
                     """);
 
             // Reading user's menu choice.
-            user_menu_choice = Reader.getChar("> Enter Menu option: ");
+            user_menu_choice = Reader.readChar("> Enter Menu option: ");
 
             // Evaluating based on the menu option entered by the user.
             switch (user_menu_choice) {
@@ -65,7 +65,7 @@ class Bix {
 
                     // Loop will keep running till an account is found.
                     do{
-                        String keyword = Reader.getString("\n > Enter Account Name: ").toUpperCase(Locale.ROOT);
+                        String keyword = Reader.readString("\n > Enter Account Name: ").toUpperCase(Locale.ROOT);
                         // Finding all account names containing the keyword.
                         search_results = Handler.getAccountNamesContaining(keyword);
 
@@ -89,7 +89,7 @@ class Bix {
                                         System.out.printf("[%d] %s \n", index, search_results.get(index));
                                     }
                                     // Asking the user to choose one of the displayed Accounts.
-                                    int user_choice = Reader.getInt(
+                                    int user_choice = Reader.readInt(
                                                     "\nChoose an Account to view (enter the number inside [ ]): ");
 
                                     // Printing the credentials.
