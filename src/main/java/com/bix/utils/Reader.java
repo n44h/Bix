@@ -1,4 +1,6 @@
-package com.bix;
+package com.bix.utils;
+
+import com.bix.enums.ExitCode;
 
 import java.util.Scanner;
 import java.util.Timer;
@@ -52,7 +54,7 @@ public class Reader {
      * @param prompt The prompt to be printed to the user to get the input.
      * @return {@code String} input from the user.
      */
-    static String readString(String prompt){
+    public static String readString(String prompt){
         System.out.print(prompt);
         startIdleSessionMonitor();
         return SCANNER.nextLine().trim();
@@ -63,7 +65,7 @@ public class Reader {
      * @param prompt The prompt to be printed to the user to get the input.
      * @return {@code char} input from the user.
      */
-    static char readChar(String prompt){
+    public static char readChar(String prompt){
         System.out.print(prompt);
         startIdleSessionMonitor();
         return SCANNER.nextLine().trim().charAt(0);
@@ -74,7 +76,7 @@ public class Reader {
      * @param prompt The prompt to be printed to the user to get the input.
      * @return {@code int} input from the user.
      */
-    static int readInt(String prompt){
+    public static int readInt(String prompt){
         System.out.print(prompt);
         return SCANNER.nextInt();
     }
@@ -86,7 +88,7 @@ public class Reader {
      *
      * @param new_timeout The new idle session timeout in seconds.
      */
-    static void setIdleTimeout(int new_timeout){
+    public static void setIdleTimeout(int new_timeout){
         if(new_timeout < 60)
             idle_timeout = 60 * 1000;
         else
@@ -105,7 +107,7 @@ public class Reader {
      * {@code idle_session_timer.schedule(terminate_idle_session_task, idle_timeout)}.
      * </p>
      */
-    static void startIdleSessionMonitor(){
+    public static void startIdleSessionMonitor(){
         // Cancel any existing scheduled tasks in the thread.
         // This is useful when restarting the timer after user activity is detected.
         idle_session_timer.cancel();

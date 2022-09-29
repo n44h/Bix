@@ -1,4 +1,4 @@
-package com.bix;
+package com.bix.utils;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
@@ -18,7 +18,7 @@ import javax.crypto.spec.SecretKeySpec;
 
 // Java program to calculate SHA hash value
 
-class Krypto {
+class Crypto {
 
     // SecureRandom object for SALT and IV generation
     private static final SecureRandom RANDOM = new SecureRandom();

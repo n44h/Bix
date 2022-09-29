@@ -1,4 +1,7 @@
-package com.bix;
+package com.bix.utils;
+
+import com.bix.enums.AESFlavor;
+import com.bix.enums.ExitCode;
 
 import java.io.*;
 import java.net.URL;
@@ -9,7 +12,7 @@ import java.util.*;
  * This is an object class that handles reading and writing in .csv files
  * This class also encrypts and decrypts data from .csv files
  */
-class Handler {
+public class Handler {
     private static Properties bix_properties;
     private static String IVRY_FILE; // stores the path to the location where the csv file is stored
     private static String HASH_FILE; // stores the path to the location where the master key hash file is stored
@@ -22,7 +25,7 @@ class Handler {
     private static char[] MASTER_PASSWORD; // global char[] to store and access Master Password; must be cleared from memory before session end.
     private static int CREDENTIAL_DISPLAY_TIMEOUT; // duration that credentials are displayed in seconds.
 
-    Handler() {
+    public Handler() {
         // Creating a Properties object to parse the config.properties file.
         bix_properties = new Properties();
         // Filename of the properties file.
@@ -75,7 +78,7 @@ class Handler {
     /**
      * Runs initial setup processes.
      */
-    static void setup(){
+    public static void setup(){
         // Firstly, confirm that the config file exists.
         File config_file = new File("something idk yet");
         try {
@@ -118,7 +121,7 @@ class Handler {
 
         // Checking that the first and second inputs match.
         if(first_input.equals(second_input)){
-            try {MASTER_PASSWORD_HASH = Krypto.getSHA256(first_input); }
+            try {MASTER_PASSWORD_HASH = Crypto.getSHA256(first_input); }
             catch (NoSuchAlgorithmException e) {
                 e.printStackTrace();
                 return false;
@@ -135,7 +138,7 @@ class Handler {
      * Set the AES flavor (128-bit, 192-bit or 256-bit).
      * @param flavor The desired AES flavor to be set as the working flavor.
      */
-    static void setAESFlavor(AESFlavor flavor){
+    public static void setAESFlavor(AESFlavor flavor){
         AES_flavor = flavor.toInteger();
     }
 
@@ -159,10 +162,10 @@ class Handler {
     /**
      * Method to authenticate the user.
      */
-    static void authenticateUser(char[] master_password) {
+    public static void authenticateUser(char[] master_password) {
         try {
             // Successful authentication.
-            if (Krypto.getSHA256(new String(master_password)).equals(MASTER_PASSWORD_HASH)) { // comparing hash values
+            if (Crypto.getSHA256(new String(master_password)).equals(MASTER_PASSWORD_HASH)) { // comparing hash values
                 // Clear the screen and display the appropriate message.
                 clearScreen();
                 System.out.println("\nAuthentication successful.");
@@ -192,7 +195,7 @@ class Handler {
     /**
      * Clear character arrays from memory by setting its elements to null characters.
      */
-    static void clearCharArrayFromMemory(char[] char_array){
+    public static void clearCharArrayFromMemory(char[] char_array){
         // Setting every character in the array to null character('\0') using Arrays.fill().
         Arrays.fill(char_array,'\0');
     } // clearCharArrayFromMemory()
@@ -202,7 +205,7 @@ class Handler {
      * @param keyword Keyword for finding an account.
      * @return An {@code ArrayList<String>} containing all the Account names that contain the keyword.
      */
-    static ArrayList<String> getAccountNamesContaining(String keyword){
+    public static ArrayList<String> getAccountNamesContaining(String keyword){
         ArrayList<String> account_names_containing_keyword = new ArrayList<>();
         // Converting the keyword to lower case because the .contains() method is case sensitive.
         keyword = keyword.toUpperCase(Locale.ROOT);
@@ -237,7 +240,7 @@ class Handler {
      * @param prompt Prompt to find account names containing a specific String.
      *               Prints all account names when set to {@code null}.
      */
-    static void printAccountNames (String prompt) {
+    public static void printAccountNames (String prompt) {
         // If prompt is null, print all account names.
         if (prompt==null) {
             try (BufferedReader br = new BufferedReader(new FileReader(IVRY_FILE))) {
@@ -254,7 +257,7 @@ class Handler {
         }
     } // printAccountNamesList()
 
-    static boolean accountExists (String account_name){ // returns true if the account exists in credentials.csv
+    public static boolean accountExists (String account_name){ // returns true if the account exists in credentials.csv
         if (auth_success) {
             account_name = account_name.toUpperCase(); // since the account names are stored in uppercase in csv file
             try (BufferedReader br = new BufferedReader(new FileReader(IVRY_FILE))) {
@@ -278,7 +281,7 @@ class Handler {
         catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
     } // sleep()
 
-    static void clearScreen() { // clears terminal and console
+    public static void clearScreen() { // clears terminal and console
         try {
             if (System.getProperty("os.name").contains("Windows"))
                 new ProcessBuilder("cmd", "/c", "cls").inheritIO().start().waitFor();
@@ -291,7 +294,7 @@ class Handler {
      * Terminates the current Bix session.
      * @param exit_code The appropriate exit code from enum {@code ExitCode}.
      */
-    static void terminateSession(ExitCode exit_code) {
+    public static void terminateSession(ExitCode exit_code) {
         // Reassurance that the Master Password will always be cleared from the memory.
         clearCharArrayFromMemory(MASTER_PASSWORD);
 
@@ -306,7 +309,7 @@ class Handler {
 
     /*-----------------------------------------------------------------------------------------*/
 
-    static void printCredentialsFor(String account_name){
+    public static void printCredentialsFor(String account_name){
         /* credentials.csv file format:
          *  account_name ,  ciphertext  ,     salt     ,     iv      , secret_key hash
          *    values[0]      values[1]      values[2]     values[3]       values[4]
@@ -332,13 +335,13 @@ class Handler {
 
         // comparing hash values of user entered password and hash stored in csv file
         try {
-            if (!Krypto.generateKeyAndGetHash(new String(MASTER_PASSWORD), salt, AES_flavor).equals(values[4])) { // checking if hash values match
+            if (!Crypto.generateKeyAndGetHash(new String(MASTER_PASSWORD), salt, AES_flavor).equals(values[4])) { // checking if hash values match
                 terminateSession(ExitCode.AUTHENTICATION_FAILED);
             }
         } catch (NoSuchAlgorithmException e) { e.printStackTrace(); }
 
         // decrypting ciphertext
-        String plaintext = Krypto.decrypt(ciphertext, new String(MASTER_PASSWORD), salt, iv, AES_flavor);
+        String plaintext = Crypto.decrypt(ciphertext, new String(MASTER_PASSWORD), salt, iv, AES_flavor);
 
         // displaying credentials
         System.out.println("\nUsername: " + plaintext.substring(0, plaintext.indexOf(" ")));
@@ -350,7 +353,7 @@ class Handler {
 
     /*-----------------------------------------------------------------------------------------*/
 
-    static void addAccountLogin() {
+    public static void addAccountLogin() {
         // get account information
         String account_name = getInput("Account Name").toUpperCase();
         String username = getInput("Account Username");
@@ -359,7 +362,7 @@ class Handler {
 
         // verifying master_key
         try {
-            if (Krypto.getSHA256(new String(MASTER_PASSWORD)).equals(MASTER_PASSWORD_HASH)) { // comparing hash values
+            if (Crypto.getSHA256(new String(MASTER_PASSWORD)).equals(MASTER_PASSWORD_HASH)) { // comparing hash values
                 System.out.println("\nAuthentication successful.");
             } else {
                 terminateSession(ExitCode.AUTHENTICATION_FAILED);
@@ -368,7 +371,7 @@ class Handler {
 
         // creating new csv line entry
         String plaintext = username + " " + password;
-        String new_csv_entry = account_name + "," + Krypto.encrypt(plaintext, new String(MASTER_PASSWORD), AES_flavor);
+        String new_csv_entry = account_name + "," + Crypto.encrypt(plaintext, new String(MASTER_PASSWORD), AES_flavor);
 
         // writing to csv file
         FileWriter csvWriter;
