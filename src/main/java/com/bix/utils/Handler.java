@@ -8,6 +8,8 @@ import java.net.URL;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
+import static com.bix.utils.Crypto.*;
+
 /**
  * This is an object class that handles reading and writing in .csv files
  * This class also encrypts and decrypts data from .csv files
@@ -121,11 +123,7 @@ public class Handler {
 
         // Checking that the first and second inputs match.
         if(first_input.equals(second_input)){
-            try {MASTER_PASSWORD_HASH = Crypto.getSHA256(first_input); }
-            catch (NoSuchAlgorithmException e) {
-                e.printStackTrace();
-                return false;
-            }
+            MASTER_PASSWORD_HASH = getSHA256Hash(first_input);
             return true;
         }
         else{
@@ -163,22 +161,20 @@ public class Handler {
      * Method to authenticate the user.
      */
     public static void authenticateUser(char[] master_password) {
-        try {
-            // Successful authentication.
-            if (Crypto.getSHA256(new String(master_password)).equals(MASTER_PASSWORD_HASH)) { // comparing hash values
-                // Clear the screen and display the appropriate message.
-                clearScreen();
-                System.out.println("\nAuthentication successful.");
+        // Authenticating Master Password input.
+        if (getSHA256Hash(new String(master_password)).equals(MASTER_PASSWORD_HASH)) { // comparing hash values
+            // Clear the screen and display the appropriate message.
+            clearScreen();
+            System.out.println("\nAuthentication successful.");
 
-                // Copy the input char[] to the class variable MASTER_PASSWORD.
-                MASTER_PASSWORD = Arrays.copyOf(master_password, master_password.length);
-                auth_success = true; // set the user authentication flag to true.
-            }
-            // Failed authentication.
-            else {
-                terminateSession(ExitCode.AUTHENTICATION_FAILED);
-            }
-        } catch (NoSuchAlgorithmException e) { e.printStackTrace(); }
+            // Copy the input char[] to the class variable MASTER_PASSWORD.
+            MASTER_PASSWORD = Arrays.copyOf(master_password, master_password.length);
+            auth_success = true; // set the user authentication flag to true.
+        }
+        // Failed authentication.
+        else {
+            terminateSession(ExitCode.AUTHENTICATION_FAILED);
+        }
 
         // Clear the input char[] from the memory.
         clearCharArrayFromMemory(master_password);
@@ -335,15 +331,21 @@ public class Handler {
 
         // comparing hash values of user entered password and hash stored in csv file
         try {
-            if (!Crypto.generateKeyAndGetHash(new String(MASTER_PASSWORD), salt, AES_flavor).equals(values[4])) { // checking if hash values match
+            if (!generateKeyAndGetHash(new String(MASTER_PASSWORD), salt, AES_flavor).equals(values[4])) { // checking if hash values match
                 terminateSession(ExitCode.AUTHENTICATION_FAILED);
             }
         } catch (NoSuchAlgorithmException e) { e.printStackTrace(); }
 
-        // decrypting ciphertext
-        String plaintext = Crypto.decrypt(ciphertext, new String(MASTER_PASSWORD), salt, iv, AES_flavor);
+        // Decrypting ciphertext.
+        String plaintext = null;
+        try {
+            plaintext = decrypt(ciphertext, new String(MASTER_PASSWORD), salt, iv, AES_flavor);
+        }
+        catch (Exception e) {
 
-        // displaying credentials
+        }
+
+        // Print credentials to Terminal.
         System.out.println("\nUsername: " + plaintext.substring(0, plaintext.indexOf(" ")));
         System.out.println("Password: " + plaintext.substring(plaintext.indexOf(" ") + 1));
         sleep(); // Sleeps for a preset duration.
@@ -360,18 +362,18 @@ public class Handler {
         String password = getInput("Account Password");
         clearScreen(); // clears all sensitive information from the screen
 
-        // verifying master_key
-        try {
-            if (Crypto.getSHA256(new String(MASTER_PASSWORD)).equals(MASTER_PASSWORD_HASH)) { // comparing hash values
-                System.out.println("\nAuthentication successful.");
-            } else {
-                terminateSession(ExitCode.AUTHENTICATION_FAILED);
-            }
-        } catch (NoSuchAlgorithmException e) { e.printStackTrace(); }
+        // Verifying the master key
+        // Comparing hash values
+        if (getSHA256Hash(new String(MASTER_PASSWORD)).equals(MASTER_PASSWORD_HASH)) {
+            System.out.println("\nAuthentication successful.");
+        }
+        else {
+            terminateSession(ExitCode.AUTHENTICATION_FAILED);
+        }
 
         // creating new csv line entry
         String plaintext = username + " " + password;
-        String new_csv_entry = account_name + "," + Crypto.encrypt(plaintext, new String(MASTER_PASSWORD), AES_flavor);
+        String new_csv_entry = account_name + "," + encrypt(plaintext, new String(MASTER_PASSWORD), AES_flavor);
 
         // writing to csv file
         FileWriter csvWriter;
