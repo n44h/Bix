@@ -16,7 +16,11 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
-// Java program to calculate SHA hash value
+/*
+ * This class serves 2 functions:
+ * 1. Generating SHA256 hashes
+ * 2. Encrypting data using the AES algorithm (with choice of flavor 128, 192, or 256).
+ */
 
 class Crypto {
 
