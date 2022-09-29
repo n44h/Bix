@@ -17,7 +17,6 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
-
 /**
  * This class serves 2 functions:
  * 1. Generating SHA256 hashes
