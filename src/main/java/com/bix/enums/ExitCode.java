@@ -1,4 +1,4 @@
-package com.bix;
+package com.bix.enums;
 
 public enum ExitCode {
     /*

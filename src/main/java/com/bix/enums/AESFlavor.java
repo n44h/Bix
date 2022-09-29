@@ -1,4 +1,4 @@
-package com.bix;
+package com.bix.enums;
 
 public enum AESFlavor {
     AES_128(128),
