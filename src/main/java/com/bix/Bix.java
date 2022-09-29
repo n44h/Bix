@@ -4,14 +4,19 @@ import java.io.Console;
 import java.util.ArrayList;
 import java.util.Locale;
 
-class Bix {
+import com.bix.enums.ExitCode;
+
+import static com.bix.utils.Handler.*;
+import static com.bix.utils.Reader.*;
+
+public class Bix {
     private static final Console CONSOLE = System.console(); // creating console object
     public static void main(String[] args){
         // Running the Bix setup.
-        Handler.setup();
+        setup();
 
         // Greet user.
-        Handler.clearScreen();
+        clearScreen();
         System.out.printf("""
                            Hello, %s!
                            This is Bix, your Password Manager.
@@ -19,7 +24,7 @@ class Bix {
 
         // Authenticate User.
         char[] master_password = getMasterPasswordFromUser(); // get the master password securely.
-        Handler.authenticateUser(master_password); // authenticate.
+        authenticateUser(master_password); // authenticate.
 
         // Bix Menu loop.
         char user_menu_choice;
@@ -45,7 +50,7 @@ class Bix {
                     """);
 
             // Reading user's menu choice.
-            user_menu_choice = Reader.readChar("> Enter Menu option: ");
+            user_menu_choice = readChar("> Enter Menu option: ");
 
             // Evaluating based on the menu option entered by the user.
             switch (user_menu_choice) {
@@ -61,13 +66,13 @@ class Bix {
                     ArrayList<String> search_results;
 
                     // Displaying all stored account names.
-                    Handler.printAccountNames(null);
+                    printAccountNames(null);
 
                     // Loop will keep running till an account is found.
                     do{
-                        String keyword = Reader.readString("\n > Enter Account Name: ").toUpperCase(Locale.ROOT);
+                        String keyword = readString("\n > Enter Account Name: ").toUpperCase(Locale.ROOT);
                         // Finding all account names containing the keyword.
-                        search_results = Handler.getAccountNamesContaining(keyword);
+                        search_results = getAccountNamesContaining(keyword);
 
                         switch(search_results.size()) {
                             // No account name contains the keyword.
@@ -77,7 +82,7 @@ class Bix {
 
                             // Only one account name contains the keyword, retrieve the information for that account.
                             case 1:
-                                Handler.printCredentialsFor(search_results.get(0));
+                                printCredentialsFor(search_results.get(0));
                                 account_retrieved = true;
                                 break;
 
@@ -89,16 +94,16 @@ class Bix {
                                         System.out.printf("[%d] %s \n", index, search_results.get(index));
                                     }
                                     // Asking the user to choose one of the displayed Accounts.
-                                    int user_choice = Reader.readInt(
+                                    int user_choice = readInt(
                                                     "\nChoose an Account to view (enter the number inside [ ]): ");
 
                                     // Printing the credentials.
-                                    Handler.printCredentialsFor(search_results.get(user_choice));
+                                    printCredentialsFor(search_results.get(user_choice));
                                     account_retrieved = true;
                                 }
                                 // If the user enters an invalid choice.
                                 catch(Exception e){
-                                    Handler.clearScreen();
+                                    clearScreen();
                                     System.out.println("The option you entered is invalid. Try again.");
                                 }
                                 break;
@@ -108,7 +113,7 @@ class Bix {
 
                 // create a new account login entry
                 case '2':
-                    Handler.addAccountLogin();
+                    addAccountLogin();
                     break;
 
                 case '3':
@@ -130,7 +135,7 @@ class Bix {
         }while(user_menu_choice != 'X');
 
         // Terminating the Bix session.
-        Handler.terminateSession(ExitCode.SAFE_TERMINATION);
+        terminateSession(ExitCode.SAFE_TERMINATION);
 
     } // main()
 
