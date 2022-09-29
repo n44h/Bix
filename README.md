@@ -1,6 +1,6 @@
 # Bix
 
-![Bix Health](https://img.shields.io/static/v1?label=Bix%20health%20indicator&message=bugs%20detected&color=cc0000&style=for-the-badge)
+![Bix Health](https://img.shields.io/static/v1?label=bix%20health%20indicator&message=under%20maintenance&color=eed202&style=for-the-badge)
 
 ## What is Bix?
 
