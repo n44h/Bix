@@ -1,4 +1,4 @@
-package com.cookiecrumbs19212.bix.BixDB;
+package com.bix.database;
 
 import java.util.ArrayList;
 
