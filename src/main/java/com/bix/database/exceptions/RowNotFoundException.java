@@ -1,4 +1,4 @@
-package com.cookiecrumbs19212.bix.BixDB.DatabaseExceptions;
+package com.bix.database.exceptions;
 
 public class RowNotFoundException extends Exception {
     public RowNotFoundException(String id) {
