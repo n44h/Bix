@@ -14,4 +14,4 @@ public enum AESFlavor {
     public int toInteger() {
         return value;
     }
-} // end of enum
+} // enum AESFlavor
