@@ -108,7 +108,7 @@ Temporary Items
 /.gradle/
 /.idea/
 /build/
-/resources/META-INF/
+/src/main/resources/META-INF/
 /Bix.iml
 
 # Ignore Gradle project-specific cache directory
