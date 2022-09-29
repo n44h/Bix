@@ -1,10 +1,10 @@
-package com.cookiecrumbs19212.bix.BixDB;
+package com.bix.database;
 
 import java.io.*;
 
 import java.util.ArrayList;
 
-import com.cookiecrumbs19212.bix.BixDB.DatabaseExceptions.*;
+import com.bix.database.exceptions.*;
 
 public class BixDB implements AutoCloseable, Serializable{
     /**
