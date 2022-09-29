@@ -1,17 +1,23 @@
 package com.bix.enums;
 
+/**
+ * Enum to represent the status of Bix.
+ * This includes safe terminations, runtime exceptions, timeouts, authentication status, misc. errors.
+ */
+
+/*
+ * How to Read Status Codes:
+ * The 1st digit of the status code indicates a general group.
+ * e.g.: Status codes starting with '1' indicate a File/Resource error.
+ *
+ * The 2nd digit further categorizes the status into a subgroup.
+ * e.g.: Status codes starting with '11' indicate that a File/Resource is not found.
+ *
+ * Unknown errors in each group end with a '00'.
+ * e.g.: The status code for an unknown File/Resource error is '100'.
+ */
+
 public enum StatusCode {
-    /*
-        How to Read Error Codes:
-        The 1st digit of the error codes indicate the general group the error belongs to.
-        e.g.: Error codes starting with '1' indicate a File/Resource error.
-
-        The 2nd digit further categorizes the error into subgroups.
-        e.g.: Error codes starting with '11' indicate that a File/Resource is not found.
-
-        Unknown errors in each group end with a '00'.
-        e.g.: The error code for an unknown File error is '100'.
-     */
 
     // 0. Safe Termination.
     SAFE_TERMINATION(0, "Safe Termination."),
@@ -37,7 +43,7 @@ public enum StatusCode {
     AUTHENTICATION_FAILED(310, "User Authentication Failed."),
 
     // 4. Idle Session Timeout.
-    TERMINATE_IDLE_SESSION(400, "Bix session terminated due to inactivity.");
+    IDLE_SESSION_TIMEOUT(400, "Bix session terminated due to inactivity.");
     //--------------------------------------------------------------------------------------------
 
     private final int statusCode;
