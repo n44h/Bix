@@ -19,11 +19,11 @@ public enum ExitCode {
     // 1. File/Resource Errors.
     UNKNOWN_RESOURCE_ERROR(100, "An unknown file/resource error has occurred."),
 
-    PROPERTY_FILE_NOT_FOUND(110, "The config.properties file could not be found."),
+    PROPERTY_FILE_NOT_FOUND(110, "The bix.properties file could not be found."),
     VAULT_FILE_NOT_FOUND(111, "The vault.bxdb file could not be found."),
     CONSOLE_NOT_FOUND(112, "Unable to find a system console associated with the current JVM."),
 
-    ERROR_ACCESSING_PROPERTY_FILE(120, "An error occurred while accessing the config.properties file."),
+    ERROR_ACCESSING_PROPERTY_FILE(120, "An error occurred while accessing the bix.properties file."),
     ERROR_ACCESSING_VAULT_FILE(121, "An error occurred while accessing the vault.bxdb file."),
 
     // 2. Setup Errors.
