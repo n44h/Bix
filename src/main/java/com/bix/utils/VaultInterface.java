@@ -1,7 +1,5 @@
 package com.bix.utils;
 
-import com.bix.enums.StatusCode;
-
 import java.sql.*;
 import java.util.ArrayList;
 
@@ -9,7 +7,7 @@ import java.util.ArrayList;
  * Class to communicate with the SQLite database that serves as the vault.
  */
 
-public class Vault {
+public class VaultInterface {
     /* Note:
      * The names "vault" and "database" are used interchangeably through the documentation in this class
      * depending on the appropriate naming for doc.
@@ -369,4 +367,4 @@ public class Vault {
         numberOfEntries = 0;
     }
 
-} // class Vault
+} // class VaultInterface
