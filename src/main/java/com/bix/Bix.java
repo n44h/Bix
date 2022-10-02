@@ -10,7 +10,7 @@ import com.bix.utils.Handler;
 import static com.bix.utils.Handler.*;
 import static com.bix.utils.Reader.*;
 
-public class Bix {
+public final class Bix {
     // Creating console object.
     private static final Console CONSOLE = System.console();
 
