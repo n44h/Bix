@@ -3,7 +3,9 @@ package com.bix.utils;
 import com.bix.enums.AESFlavor;
 import com.bix.enums.StatusCode;
 
+import java.awt.Desktop;
 import java.io.*;
+import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,11 +32,11 @@ public class Handler {
     private static int CREDENTIAL_DISPLAY_TIMEOUT; // duration that credentials are displayed in seconds.
 
     public Handler() {
-        // Creating a Properties object to parse the bix.properties file.
+        // Creating a Properties object to parse the config.properties file.
         BIX_PROPERTIES = new Properties();
 
         // Filename of the properties file.
-        String properties_filename = "bix.properties";
+        String properties_filename = "config.properties";
 
         try {
             // Creating an input stream object of the properties file which is in the Resource folder.
@@ -295,23 +297,7 @@ public class Handler {
         } catch (Exception e) { e.printStackTrace(); }
     } // clearScreen()
 
-    /**
-     * Terminates the current Bix session.
-     * @param status The appropriate status code from enum {@code StatusCode}.
-     */
-    public static void terminateSession(StatusCode status) {
-        // Reassurance that the Master Password will always be cleared from the memory.
-        clearCharArrayFromMemory(MASTER_PASSWORD);
 
-        // Clearing the console.
-        clearScreen();
-
-        // Displaying the status message.
-        System.out.printf("\n%s\nTerminating Bix session.", status.getMessage());
-
-        // Terminating the session.
-        System.exit(status.getStatusCode());
-    } // terminateSession()
 
     /*-----------------------------------------------------------------------------------------*/
 
@@ -435,4 +421,49 @@ public class Handler {
             }
         } while (true); // endless loop. return statements will take care of exit.
     } // getInput()
-} // class
+
+    public static void openGitHubPage() {
+        try {
+            Desktop desktop = Desktop.getDesktop();
+
+            // Get the GitHub page URL from config.properties.
+            URI url = new URI(BIX_PROPERTIES.getProperty("github_page"));
+
+            // Open the URL.
+            desktop.browse(url);
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void executeShutdownProcedure() {
+        // Clear the screen so that any sensitive information is erased from the terminal.
+        clearScreen();
+
+        // If master password is not null, clear it from memory.
+        if (MASTER_PASSWORD != null) {
+            // Setting every character in the char array to null character('\0') using Arrays.fill().
+            Arrays.fill(MASTER_PASSWORD, '\0');
+        }
+    }
+
+    /**
+     * Terminates the current Bix session.
+     * @param status The appropriate status code from enum {@code StatusCode}.
+     */
+    public static void terminateSession(StatusCode status) {
+        // Reassurance that the Master Password will always be cleared from the memory.
+        clearCharArrayFromMemory(MASTER_PASSWORD);
+
+        // Clearing the terminal.
+        clearScreen();
+
+        // Displaying the status message.
+        System.out.print("\nTerminating Bix session.");
+
+        // Terminating the session.
+        System.exit(status.getStatusCode());
+    } // terminateSession()
+
+} // class Handler
