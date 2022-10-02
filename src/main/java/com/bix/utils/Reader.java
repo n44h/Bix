@@ -20,7 +20,7 @@ import com.bix.enums.StatusCode;
  * </p>
  */
 
-public class Reader {
+public final class Reader {
     private static final Scanner SCANNER = new Scanner(System.in);
 
     /* idle_timeout stores how long a session can be idle in milliseconds.
