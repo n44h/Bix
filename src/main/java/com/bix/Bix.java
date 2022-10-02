@@ -14,6 +14,45 @@ public class Bix {
     // Creating console object.
     private static final Console CONSOLE = System.console();
 
+    // Main menu options String.
+    private static final String MAIN_MENU_OPTIONS = """
+                    Bix Main Menu:
+
+                    \t[1] Retrieve Account
+
+                    \t[2] Add Account
+
+                    \t[3] Update Account
+                    
+                    \t[4] Delete Account
+
+                    \t[M] More Options
+
+                    \t[X] Exit Bix
+                    
+                    """;
+
+    // Extended menu options String.
+    private static final String EXT_MENU_OPTIONS = """
+                    Extended Menu:
+                    
+                    \t[5] Reset Master Password
+                    
+                    \t[6] Import Vault
+                    
+                    \t[7] Export Vault
+                    
+                    \t[8] Purge Vault
+                    
+                    \t[9] Open Bix GitHub Page
+                    
+                    \t[X] Exit Bix
+                    
+                    """;
+
+    // Variable to indicate whether to print the main menu or extended menu.
+    private static boolean printMainMenu = true;
+
     public static void main(String[] args) {
         // Adding a JVM shutdown hook. This thread will be executed when the JVM is shutting down.
         // This Shutdown Hook is for clearing the Master Password from memory when the session is terminated.
@@ -28,52 +67,41 @@ public class Bix {
         System.out.printf("""
                            Hello, %s!
                            This is Bix, your Password Manager.
-                           """, getUsernameFromSystem()); // getUsernameFromSystem() gets the name of the current user.
+                           """, getUsernameFromSystem());
 
         // Authenticate User.
-        char[] master_password = getMasterPasswordFromUser(); // get the master password securely.
-        authenticateUser(master_password);
+        char[] masterPassword = getMasterPasswordFromUser(); // get the master password securely.
+        authenticateUser(masterPassword);
 
         // Bix Menu loop.
-        char user_menu_choice;
+        char userMenuChoice;
         do {
-            // Printing menu options.
-            System.out.print("""
-                    Bix Menu:
+            if (printMainMenu)
+                // Printing main menu options.
+                System.out.print(MAIN_MENU_OPTIONS);
+            else {
+                // Printing extended menu options.
+                System.out.print(EXT_MENU_OPTIONS);
 
-                    \t[1] Find an Account
-
-                    \t[2] Add a new Account
-
-                    \t[3] Manage Saved Accounts (Edit/Delete)
-
-                    \t[4] Reset Master Password
-
-                    \t[5] Import/Export a CSV vault file
-                    
-                    \t[6] Bix Settings
-                    
-                    \t[7] Open GitHub Page
-
-                    \t[X] Exit Bix
-                    
-                    """);
+                // Set the printMainMenu to true again.
+                printMainMenu = true;
+            }
 
             // Reading user's menu choice.
-            user_menu_choice = readChar("> Enter Menu option: ");
+            userMenuChoice = readChar("> Enter Menu option: ");
 
             // Evaluating based on the menu option entered by the user.
-            switch (user_menu_choice) {
+            switch (userMenuChoice) {
 
-                // retrieve login information for an account.
+                // Retrieve Account.
                 case '1':
                     System.out.println("\nRetrieve Account Login Credentials");
 
                     // Boolean to indicate if the account has been found.
-                    boolean account_retrieved = false;
+                    boolean retrievedAccount = false;
 
                     // ArrayList that stores all the accounts that contain the keyword entered by the user.
-                    ArrayList<String> search_results;
+                    ArrayList<String> searchResults;
 
                     // Displaying all stored account names.
                     printAccountNames(null);
@@ -82,9 +110,9 @@ public class Bix {
                     do{
                         String keyword = readString("\n > Enter Account Name: ").toUpperCase(Locale.ROOT);
                         // Finding all account names containing the keyword.
-                        search_results = getAccountNamesContaining(keyword);
+                        searchResults = getAccountNamesContaining(keyword);
 
-                        switch(search_results.size()) {
+                        switch(searchResults.size()) {
                             // No account name contains the keyword.
                             case 0:
                                 System.out.printf("\nBix could not find an Account Name containing \"%s\".\n", keyword);
@@ -92,24 +120,24 @@ public class Bix {
 
                             // Only one account name contains the keyword, retrieve the information for that account.
                             case 1:
-                                printCredentialsFor(search_results.get(0));
-                                account_retrieved = true;
+                                printCredentialsFor(searchResults.get(0));
+                                retrievedAccount = true;
                                 break;
 
                             // Two or more account names contain the keyword, display them and ask the user to choose one.
                             default:
                                 try{
                                     // Printing the account names along with an index number.
-                                    for(int index = 0 ; index < search_results.size() ; index++){
-                                        System.out.printf("[%d] %s \n", index, search_results.get(index));
+                                    for(int index = 0 ; index < searchResults.size() ; index++){
+                                        System.out.printf("[%d] %s \n", index, searchResults.get(index));
                                     }
                                     // Asking the user to choose one of the displayed Accounts.
-                                    int user_choice = readInt(
+                                    int userChoice = readInt(
                                                     "\nChoose an Account to view (enter the number inside [ ]): ");
 
                                     // Printing the credentials.
-                                    printCredentialsFor(search_results.get(user_choice));
-                                    account_retrieved = true;
+                                    printCredentialsFor(searchResults.get(userChoice));
+                                    retrievedAccount = true;
                                 }
                                 // If the user enters an invalid choice.
                                 catch(Exception e){
@@ -118,31 +146,58 @@ public class Bix {
                                 }
                                 break;
                         } // switch
-                    }while(!account_retrieved);
+                    }while(!retrievedAccount);
                     break;
 
-                // create a new account login entry
+                // Add Account.
                 case '2':
                     addAccountLogin();
                     break;
 
+                // Update Account.
                 case '3':
                     break;
 
+                // Delete Account.
                 case '4':
                     break;
 
+                // Reset Master Password.
                 case '5':
                     break;
 
+                // Import Vault.
                 case '6':
+                    break;
+
+                // Export Vault.
+                case '7':
+                    break;
+
+                // Purge Vault.
+                case '8':
+                    break;
+
+                // Open GitHub page.
+                case '9':
+                    // Open the Bix Repository GitHub page in the default browser.
+                    openGitHubPage();
+
+                    // Terminate the session.
+                    terminateSession(StatusCode.SAFE_TERMINATION);
+                    break;
+
+                // View extended menu options.
+                case 'M':
+                    // Setting to false, so the extended menu is printed in the next iteration of the loop.
+                    printMainMenu = false;
                     break;
 
                 default:
                     System.out.println("Invalid menu option entered. Try again.");
             } // switch
 
-        }while(user_menu_choice != 'X');
+        } while(userMenuChoice != 'X');
 
         // Terminating the Bix session.
         terminateSession(StatusCode.SAFE_TERMINATION);
