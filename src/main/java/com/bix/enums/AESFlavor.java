@@ -7,7 +7,7 @@ public enum AESFlavor {
 
     private final int value;
 
-    AESFlavor(int value) {
+    AESFlavor(final int value) {
         this.value = value;
     }
 
