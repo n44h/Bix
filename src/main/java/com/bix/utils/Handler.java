@@ -19,14 +19,15 @@ import static com.bix.utils.Reader.*;
 /**
  * This class handles all the backend operations of Bix.
  */
-public class Handler {
+public final class Handler {
     private static Properties BIX_PROPERTIES;
     private static String VAULT_FILE; // stores the path to the location where the csv file is stored
     private static String HASH_FILE; // stores the path to the location where the master key hash file is stored
     private static String MASTER_PASSWORD_HASH; // stores the SHA256 hash of the master key.
-    private static boolean auth_success; // FALSE by default, turns TRUE if the user authentication is successful.
+    private static boolean authSuccess; // FALSE by default, turns TRUE if the user authentication is successful.
     private static int AES_FLAVOR; // Can represent AES-128, AES-192, or AES-256.
-    private static String[] account_names; // Stores the stored account names.
+    private static int vaultSize;
+    private static String[] accountNames; // Stores the stored account names.
     private static Console CONSOLE; // System console reference.
     private static char[] MASTER_PASSWORD; // global char[] to store and access Master Password; must be cleared from memory before session end.
     private static int CREDENTIAL_DISPLAY_TIMEOUT; // duration that credentials are displayed in seconds.
@@ -36,14 +37,14 @@ public class Handler {
         BIX_PROPERTIES = new Properties();
 
         // Filename of the properties file.
-        String properties_filename = "config.properties";
+        String propertiesFilename = "config.properties";
 
         try {
             // Creating an input stream object of the properties file which is in the Resource folder.
-            InputStream resource_file_input_stream = getClass().getClassLoader().getResourceAsStream(properties_filename);
+            InputStream resourceFileInputStream = getClass().getClassLoader().getResourceAsStream(propertiesFilename);
 
-            // Loading the properties into bix_properties.
-            BIX_PROPERTIES.load(resource_file_input_stream);
+            // Loading the properties into BIX_PROPERTIES.
+            BIX_PROPERTIES.load(resourceFileInputStream);
         }
         catch (IOException ioe) {
             ioe.printStackTrace();
@@ -71,9 +72,9 @@ public class Handler {
         MASTER_PASSWORD = null; // will be null until the user has been successfully authenticated.
         HASH_FILE = "/mkhash.txt";
         AES_FLAVOR = AESFlavor.AES_128.toInteger(); // default AES flavor is 128 bit.
-        auth_success = false;
-        vault_size = Integer.parseInt(BIX_PROPERTIES.getProperty("vault_size"));
-        account_names = new String[vault_size];
+        authSuccess = false;
+        vaultSize = Integer.parseInt(BIX_PROPERTIES.getProperty("vault_size"));
+        accountNames = new String[vaultSize];
         CONSOLE = System.console(); // attaching variable to the system console.
         if (CONSOLE == null)
             terminateSession(StatusCode.CONSOLE_NOT_FOUND);
@@ -93,7 +94,7 @@ public class Handler {
      */
     public static void setup(){
         // Firstly, confirm that the config file exists.
-        File config_file = new File("something idk yet");
+        File configFile = new File("something idk yet");
         try {
             // If this is the first time opening Bix, do the initial setup.
             if (Boolean.parseBoolean(BIX_PROPERTIES.getProperty("initial_setup_required"))) {
@@ -123,18 +124,18 @@ public class Handler {
      * @return {@code true} if new Master Password was set successfully.
      */
     private static boolean setMasterPassword(){
-        String first_input,second_input; // stores the user's input
+        String firstInput,secondInput; // stores the user's input
 
         // Get the new Master Password from user.
-        first_input = readString("\n > Enter your new Master Password (1st time) : ");
-        second_input = readString("\n > Enter your new Master Password (2nd time) : ");
+        firstInput = readString("\n > Enter your new Master Password (1st time) : ");
+        secondInput = readString("\n > Enter your new Master Password (2nd time) : ");
 
         // Clearing the interface.
         clearScreen();
 
         // Checking that the first and second inputs match.
-        if(first_input.equals(second_input)){
-            MASTER_PASSWORD_HASH = getSHA256Hash(first_input);
+        if(firstInput.equals(secondInput)){
+            MASTER_PASSWORD_HASH = getSHA256Hash(firstInput);
             return true;
         }
         else{
@@ -152,35 +153,35 @@ public class Handler {
     }
 
     private void verifyFileExists() { // method to check if the required csv and hash files exist
-        boolean file_located = true; // turns false if one of the files is not found
+        boolean fileLocated = true; // turns false if one of the files is not found
 
-        File csv_file = new File(VAULT_FILE);
-        if (!csv_file.exists()) { // checking if csv file exists
+        File csvFile = new File(VAULT_FILE);
+        if (!csvFile.exists()) { // checking if csv file exists
             System.out.println("\nERROR: Failed to locate credentials.csv in filepath.");
-            file_located = false;
+            fileLocated = false;
         }
-        URL hash_location = Handler.class.getResource(HASH_FILE);
-        if (hash_location == null) {
+        URL hashLocation = Handler.class.getResource(HASH_FILE);
+        if (hashLocation == null) {
             System.out.println("\nERROR: Failed to locate mkhash.txt in filepath.");
-            file_located = false;
+            fileLocated = false;
         }
-        if (!file_located) { terminateSession(StatusCode.VAULT_FILE_NOT_FOUND); }
+        if (!fileLocated) { terminateSession(StatusCode.VAULT_FILE_NOT_FOUND); }
 
     } //verifyFile()
 
     /**
      * Method to authenticate the user.
      */
-    public static void authenticateUser(char[] master_password) {
+    public static void authenticateUser(char[] masterPassword) {
         // Authenticating Master Password input.
-        if (getSHA256Hash(new String(master_password)).equals(MASTER_PASSWORD_HASH)) { // comparing hash values
+        if (getSHA256Hash(new String(masterPassword)).equals(MASTER_PASSWORD_HASH)) { // comparing hash values
             // Clear the screen and display the appropriate message.
             clearScreen();
             System.out.println("\nAuthentication successful.");
 
             // Copy the input char[] to the class variable MASTER_PASSWORD.
-            MASTER_PASSWORD = Arrays.copyOf(master_password, master_password.length);
-            auth_success = true; // set the user authentication flag to true.
+            MASTER_PASSWORD = Arrays.copyOf(masterPassword, masterPassword.length);
+            authSuccess = true; // set the user authentication flag to true.
         }
         // Failed authentication.
         else {
@@ -188,7 +189,7 @@ public class Handler {
         }
 
         // Clear the input char[] from the memory.
-        clearCharArrayFromMemory(master_password);
+        clearCharArrayFromMemory(masterPassword);
 
         /* NOTE:
          * Don't clear MASTER_PASSWORD from the memory after user authentication because
@@ -202,9 +203,9 @@ public class Handler {
     /**
      * Clear character arrays from memory by setting its elements to null characters.
      */
-    public static void clearCharArrayFromMemory(char[] char_array){
+    public static void clearCharArrayFromMemory(char[] charArray){
         // Setting every character in the array to null character('\0') using Arrays.fill().
-        Arrays.fill(char_array,'\0');
+        Arrays.fill(charArray,'\0');
     } // clearCharArrayFromMemory()
 
     /**
@@ -213,15 +214,15 @@ public class Handler {
      * @return An {@code ArrayList<String>} containing all the Account names that contain the keyword.
      */
     public static ArrayList<String> getAccountNamesContaining(String keyword){
-        ArrayList<String> account_names_containing_keyword = new ArrayList<>();
+        ArrayList<String> accountNamesContainingKeyword = new ArrayList<>();
         // Converting the keyword to lower case because the .contains() method is case sensitive.
         keyword = keyword.toUpperCase(Locale.ROOT);
-        // Looping through the account_names array to find all account names that contain the keyword.
-        for(String account : account_names){
+        // Looping through the accountNames array to find all account names that contain the keyword.
+        for(String account : accountNames){
             if(account.contains(keyword))
-                account_names_containing_keyword.add(account);
+                accountNamesContainingKeyword.add(account);
         }
-        return account_names_containing_keyword;
+        return accountNamesContainingKeyword;
     }
 
     /**
@@ -232,7 +233,7 @@ public class Handler {
             int index = 0;
             String line;
             while ((line = br.readLine()) != null) {
-                account_names[index++] = line.substring(0, line.indexOf(',')); // split up values in the line and store in String array
+                accountNames[index++] = line.substring(0, line.indexOf(',')); // split up values in the line and store in String array
 
             } // while
 
@@ -264,14 +265,14 @@ public class Handler {
         }
     } // printAccountNamesList()
 
-    public static boolean accountExists (String account_name){ // returns true if the account exists in credentials.csv
-        if (auth_success) {
-            account_name = account_name.toUpperCase(); // since the account names are stored in uppercase in csv file
+    public static boolean accountExists (String accountName){ // returns true if the account exists in credentials.csv
+        if (authSuccess) {
+            accountName = accountName.toUpperCase(); // since the account names are stored in uppercase in csv file
             try (BufferedReader br = new BufferedReader(new FileReader(VAULT_FILE))) {
                 String line;
                 while ((line = br.readLine()) != null) {
                     String[] values = line.split(","); // split up values in the line and store in String array
-                    if (values[0].contains(account_name)) {
+                    if (values[0].contains(accountName)) {
                         br.close();
                         return true;
                     }
@@ -301,7 +302,7 @@ public class Handler {
 
     /*-----------------------------------------------------------------------------------------*/
 
-    public static void printCredentialsFor(String account_name){
+    public static void printCredentialsFor(String accountName){
         /* credentials.csv file format:
          *  account_name ,  ciphertext  ,     salt     ,     iv      , secret_key hash
          *    values[0]      values[1]      values[2]     values[3]       values[4]
@@ -313,7 +314,7 @@ public class Handler {
             while ((line = br.readLine()) != null) {
                 values = line.split(","); // split up values in the line and store in String array
 
-                if (values[0].contains(account_name)) {
+                if (values[0].contains(accountName)) {
                     break;
                 } // checking if account is found
             } // while
@@ -347,7 +348,7 @@ public class Handler {
 
     public static void addAccountLogin() {
         // get account information
-        String account_name = getInput("Account Name").toUpperCase();
+        String accountName = getInput("Account Name").toUpperCase();
         String username = getInput("Account Username");
         String password = getInput("Account Password");
         clearScreen(); // clears all sensitive information from the screen
@@ -363,13 +364,13 @@ public class Handler {
 
         // creating new csv line entry
         String plaintext = username + " " + password;
-        String new_csv_entry = account_name + "," + encrypt(plaintext, new String(MASTER_PASSWORD), AES_FLAVOR);
+        String newCsvEntry = accountName + "," + encrypt(plaintext, new String(MASTER_PASSWORD), AES_FLAVOR);
 
         // writing to csv file
         FileWriter csvWriter;
         try {
             csvWriter = new FileWriter(VAULT_FILE, true);
-            csvWriter.append(new_csv_entry);
+            csvWriter.append(newCsvEntry);
             csvWriter.append("\n");
 
             csvWriter.flush();
