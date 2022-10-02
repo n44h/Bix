@@ -5,13 +5,21 @@ import java.util.ArrayList;
 import java.util.Locale;
 
 import com.bix.enums.StatusCode;
+import com.bix.utils.Handler;
 
 import static com.bix.utils.Handler.*;
 import static com.bix.utils.Reader.*;
 
 public class Bix {
-    private static final Console CONSOLE = System.console(); // creating console object
-    public static void main(String[] args){
+    // Creating console object.
+    private static final Console CONSOLE = System.console();
+
+    public static void main(String[] args) {
+        // Adding a JVM shutdown hook. This thread will be executed when the JVM is shutting down.
+        // This Shutdown Hook is for clearing the Master Password from memory when the session is terminated.
+        // Carrying out shutdown procedure: clears sensitive information from the terminal and memory.
+        Runtime.getRuntime().addShutdownHook(new Thread(Handler::executeShutdownProcedure));
+
         // Running the Bix setup.
         setup();
 
@@ -24,7 +32,7 @@ public class Bix {
 
         // Authenticate User.
         char[] master_password = getMasterPasswordFromUser(); // get the master password securely.
-        authenticateUser(master_password); // authenticate.
+        authenticateUser(master_password);
 
         // Bix Menu loop.
         char user_menu_choice;
@@ -44,6 +52,8 @@ public class Bix {
                     \t[5] Import/Export a CSV vault file
                     
                     \t[6] Bix Settings
+                    
+                    \t[7] Open GitHub Page
 
                     \t[X] Exit Bix
                     
