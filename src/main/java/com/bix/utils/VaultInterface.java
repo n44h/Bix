@@ -1,13 +1,19 @@
 package com.bix.utils;
 
-import java.sql.*;
+import java.sql.Statement;
+import java.sql.ResultSet;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+
 import java.util.ArrayList;
 
 /**
  * Class to communicate with the SQLite database that serves as the vault.
  */
 
-public class VaultInterface {
+public final class VaultInterface {
     /* Note:
      * The names "vault" and "database" are used interchangeably through the documentation in this class
      * depending on the appropriate naming for doc.
