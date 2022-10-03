@@ -10,7 +10,10 @@ import java.sql.PreparedStatement;
 import java.util.ArrayList;
 
 /**
- * Class to communicate with the SQLite database that serves as the vault.
+ * Class to communicate with the SQLite database "vault.db".
+ * The database contains 2 tables: "accounts" and "bix_metadata".
+ * accounts table stores the encrypted account credentials.
+ * bix_metadata table stores information critical to Bix operations.
  */
 
 public final class VaultInterface {
@@ -41,9 +44,6 @@ public final class VaultInterface {
 
     // Static initializer. Will be executed as soon as the program starts.
     static {
-        // Creates the accounts table if it doesn't exist.
-        createTable("accounts");
-
         // Get the number of entries in the vault and store it in num_of_entries.
         // Construct SQL statement to count entries in a table.
         String countStmt = "SELECT count(*) FROM accounts";
