@@ -27,7 +27,7 @@ public final class Reader {
      * Default is 5 minutes (300 seconds).
      * Lower limit is 30 seconds. Upper limit is 20 minutes (1200 seconds).
      */
-    private static int IDLE_TIMEOUT = 5 * 60;
+    private static int IDLE_TIMEOUT;
 
     /* Timer object starts a background thread.
      * TimerTask is a task that can be scheduled and linked to the Timer object.
@@ -47,11 +47,25 @@ public final class Reader {
     };
 
     /**
+     * Sets a new idle session timeout. Default timeout is 300 seconds (5 minutes).
+     * As a reasonable security measure, the new timeout cannot exceed 1200 seconds (20 minutes).
+     * New timeout can also not be less than 30 seconds.
+     *
+     * @param newTimeout new idle session timeout in seconds.
+     */
+    public static void setIdleTimeout(int newTimeout) {
+        if(newTimeout < 30)
+            IDLE_TIMEOUT = 30;
+        else
+            IDLE_TIMEOUT = Math.min(newTimeout, 20 * 60);
+    }
+
+    /**
      * Method to read a String input from the user.
      * @param prompt The prompt to be printed to the user to get the input.
      * @return {@code String} input from the user.
      */
-    public static String readString(String prompt){
+    public static String readString(String prompt) {
         System.out.printf("\n%s", prompt);
         startIdleSessionMonitor();
         return SCANNER.nextLine().trim();
@@ -62,7 +76,7 @@ public final class Reader {
      * @param prompt The prompt to be printed to the user to get the input.
      * @return {@code char} input from the user.
      */
-    public static char readChar(String prompt){
+    public static char readChar(String prompt) {
         System.out.printf("\n%s", prompt);
         startIdleSessionMonitor();
         return SCANNER.nextLine().trim().charAt(0);
@@ -73,24 +87,11 @@ public final class Reader {
      * @param prompt The prompt to be printed to the user to get the input.
      * @return {@code int} input from the user.
      */
-    public static int readInt(String prompt){
+    public static int readInt(String prompt) {
         System.out.printf("\n%s", prompt);
+        startIdleSessionMonitor();
         return SCANNER.nextInt();
     }
-
-    /**
-     * Sets a new idle session timeout. Default timeout is 300 seconds (5 minutes).
-     * As a reasonable security measure, the new timeout cannot exceed 1200 seconds (20 minutes).
-     * New timeout can also not be less than 30 seconds.
-     *
-     * @param newTimeout new idle session timeout in seconds.
-     */
-    public static void setIdleTimeout(int newTimeout){
-        if(newTimeout < 30)
-            IDLE_TIMEOUT = 30;
-        else
-            IDLE_TIMEOUT = Math.min(newTimeout, 20 * 60);
-    } // setIdleTimeout()
 
     /**
      * <p>
@@ -104,7 +105,7 @@ public final class Reader {
      * {@code idle_session_timer.schedule(terminate_idle_session_task, idle_timeout)}.
      * </p>
      */
-    public static void startIdleSessionMonitor(){
+    private static void startIdleSessionMonitor() {
         // Cancel any existing scheduled tasks in the thread.
         // This is useful when restarting the timer after user activity is detected.
         IDLE_SESSION_TIMER.cancel();
@@ -112,6 +113,6 @@ public final class Reader {
         // Scheduling the idle session termination task again.
         // Multiply IDLE_TIMEOUT by 1000 because Timer.schedule() takes arguments in milliseconds.
         IDLE_SESSION_TIMER.schedule(TERMINATE_IDLE_SESSION_TASK, IDLE_TIMEOUT * 1000L);
-    } // startIdleSessionTimer()
+    }
 
 } // class Reader
