@@ -6,7 +6,6 @@ import com.bix.enums.StatusCode;
 import java.awt.Desktop;
 import java.io.*;
 import java.net.URI;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Locale;
@@ -19,111 +18,73 @@ import static com.bix.utils.Reader.*;
 /**
  * This class handles all the backend operations of Bix.
  */
-public final class Handler {
-    private static Properties BIX_PROPERTIES;
-    private static String VAULT_FILE; // stores the path to the location where the csv file is stored
-    private static String HASH_FILE; // stores the path to the location where the master key hash file is stored
+public final class Controller {
+    private static final String CONFIG_FILE = "config.properties";
+    private static final String VAULT_FILE = "vault.db";
+    private static Properties BIX_PROPERTIES = new Properties();
+    private static final Console CONSOLE = System.console();
+    private static int AES_FLAVOR = AESFlavor.AES_128.toInteger();
+    private static char[] MASTER_PASSWORD = null;
     private static String MASTER_PASSWORD_HASH; // stores the SHA256 hash of the master key.
-    private static boolean authSuccess; // FALSE by default, turns TRUE if the user authentication is successful.
-    private static int AES_FLAVOR; // Can represent AES-128, AES-192, or AES-256.
+    private static int CREDENTIAL_DISPLAY_DURATION;
+    private static URI GITHUB_URL;
+
+    private static boolean authSuccess = false; // FALSE by default, turns TRUE if the user authentication is successful.
     private static int vaultSize;
     private static String[] accountNames; // Stores the stored account names.
-    private static Console CONSOLE; // System console reference.
-    private static char[] MASTER_PASSWORD; // global char[] to store and access Master Password; must be cleared from memory before session end.
-    private static int CREDENTIAL_DISPLAY_TIMEOUT; // duration that credentials are displayed in seconds.
 
-    public Handler() {
-        // Creating a Properties object to parse the config.properties file.
-        BIX_PROPERTIES = new Properties();
 
-        // Filename of the properties file.
-        String propertiesFilename = "config.properties";
-
+    // Static initializer.
+    static {
         try {
-            // Creating an input stream object of the properties file which is in the Resource folder.
-            InputStream resourceFileInputStream = getClass().getClassLoader().getResourceAsStream(propertiesFilename);
+            // Input stream from config file (config file is in the resource folder).
+            InputStream configFileInputStream = Controller.class.getClassLoader().getResourceAsStream(CONFIG_FILE);
 
             // Loading the properties into BIX_PROPERTIES.
-            BIX_PROPERTIES.load(resourceFileInputStream);
+            BIX_PROPERTIES.load(configFileInputStream);
+
+            // Get the credentials display duration from config file.
+            // For security: maximum allowed duration is 10 minutes.
+            CREDENTIAL_DISPLAY_DURATION = Math.min(10 * 60,
+                    Integer.parseInt(BIX_PROPERTIES.getProperty("credential_display_duration")));
+
+            // Set the idle session timeout in the Reader class.
+            int idleSessionTimeout = Integer.parseInt(BIX_PROPERTIES.getProperty("idle_session_timeout"));
+            setIdleTimeout(idleSessionTimeout);
+
+            // Get Bix GitHub page URL from config file.
+            GITHUB_URL = new URI(BIX_PROPERTIES.getProperty("github_page"));
         }
         catch (IOException ioe) {
             ioe.printStackTrace();
-            terminateSession(StatusCode.ERROR_ACCESSING_PROPERTY_FILE);
+            terminateSession(StatusCode.ERROR_ACCESSING_CONFIG_FILE);
         }
-        catch (NullPointerException ne){
+        catch (NullPointerException ne) {
             ne.printStackTrace();
-            terminateSession(StatusCode.PROPERTY_FILE_NOT_FOUND);
+            terminateSession(StatusCode.CONFIG_FILE_NOT_FOUND);
         }
         catch (Exception e) {
             e.printStackTrace();
             terminateSession(StatusCode.UNKNOWN_RESOURCE_ERROR);
         }
 
-        /*
-        // finding credentials.csv location
-        try {
-            // first line finds the location of .jar file, second line attaches
-            // "credentials.csv" string to the parent path of .jar file
-            // NOTE: it is assumed that the credentials.csv file is in the same folder as the .jar file
-            File jarFile = new File(Bix.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath());
-            IVRY_FILE = jarFile.getParent() + File.separator + "credentials.csv";
-        } catch (Exception e) {e.printStackTrace();}
-                */
-        MASTER_PASSWORD = null; // will be null until the user has been successfully authenticated.
-        HASH_FILE = "/mkhash.txt";
-        AES_FLAVOR = AESFlavor.AES_128.toInteger(); // default AES flavor is 128 bit.
-        authSuccess = false;
-        vaultSize = Integer.parseInt(BIX_PROPERTIES.getProperty("vault_size"));
-        accountNames = new String[vaultSize];
-        CONSOLE = System.console(); // attaching variable to the system console.
+        // If the console object is null, terminate session.
         if (CONSOLE == null)
             terminateSession(StatusCode.CONSOLE_NOT_FOUND);
-        //verifyFileExists();
-
-        // retrieve the SHA256 hash of the master key stored in the credentials.csv file
-        /*try {
-            InputStreamReader isReader = new InputStreamReader(this.getClass().getResourceAsStream(HASH_FILE));
-            BufferedReader br = new BufferedReader(isReader);
-            MASTER_PASSWORD_HASH = br.readLine();
-            br.close();
-        } catch (Exception e) { e.printStackTrace(); }*/
-    } //constructor
+    }
 
     /**
      * Runs initial setup processes.
      */
-    public static void setup(){
-        // Firstly, confirm that the config file exists.
-        File configFile = new File("something idk yet");
-        try {
-            // If this is the first time opening Bix, do the initial setup.
-            if (Boolean.parseBoolean(BIX_PROPERTIES.getProperty("initial_setup_required"))) {
-                // Step 1: Set up the Master Password.
-                if (setMasterPassword()) {
-                /* If initial setup was successful, set the "initial_setup_property" as false
-                   to prevent setup procedure from redundantly running again in the future. */
-                    BIX_PROPERTIES.setProperty("initial_setup_required", "false");
-                }
-                else
-                    terminateSession(StatusCode.MASTER_PASSWORD_SETUP_FAILED);
-            }
-
-            // Loading the CREDENTIAL_DISPLAY_TIMEOUT.
-            CREDENTIAL_DISPLAY_TIMEOUT = Integer.parseInt(BIX_PROPERTIES.getProperty("credential_display_duration"));
-
-            // Setting the idle_timeout in the Reader class.
-            setIdleTimeout(Integer.parseInt(BIX_PROPERTIES.getProperty("idle_session_timeout")));
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }// setup()
+    public static void setup() {
+        // Set the master password for Bix.
+        setMasterPassword();
+    }
 
     /**
      * Sets the Master Password for Bix. Standard Password setting process.
-     * @return {@code true} if new Master Password was set successfully.
      */
-    private static boolean setMasterPassword(){
+    private static void setMasterPassword() {
         String firstInput,secondInput; // stores the user's input
 
         // Get the new Master Password from user.
@@ -134,15 +95,13 @@ public final class Handler {
         clearScreen();
 
         // Checking that the first and second inputs match.
-        if(firstInput.equals(secondInput)){
+        if (firstInput.equals(secondInput)) {
             MASTER_PASSWORD_HASH = getSHA256Hash(firstInput);
-            return true;
         }
-        else{
+        else {
             System.out.println("\nThe two passwords you entered did not match. Failed to set Master Password.");
-            return false;
         }
-    }// setMasterPassword()
+    }
 
     /**
      * Set the AES flavor (128-bit, 192-bit or 256-bit).
@@ -152,22 +111,6 @@ public final class Handler {
         AES_FLAVOR = flavor.toInteger();
     }
 
-    private void verifyFileExists() { // method to check if the required csv and hash files exist
-        boolean fileLocated = true; // turns false if one of the files is not found
-
-        File csvFile = new File(VAULT_FILE);
-        if (!csvFile.exists()) { // checking if csv file exists
-            System.out.println("\nERROR: Failed to locate credentials.csv in filepath.");
-            fileLocated = false;
-        }
-        URL hashLocation = Handler.class.getResource(HASH_FILE);
-        if (hashLocation == null) {
-            System.out.println("\nERROR: Failed to locate mkhash.txt in filepath.");
-            fileLocated = false;
-        }
-        if (!fileLocated) { terminateSession(StatusCode.VAULT_FILE_NOT_FOUND); }
-
-    } //verifyFile()
 
     /**
      * Method to authenticate the user.
@@ -198,20 +141,12 @@ public final class Handler {
          * The MASTER_PASSWORD variable will automatically get cleared from the memory by the
          * terminateSession() method.
          */
-    } // authenticateUser()
-
-    /**
-     * Clear character arrays from memory by setting its elements to null characters.
-     */
-    public static void clearCharArrayFromMemory(char[] charArray){
-        // Setting every character in the array to null character('\0') using Arrays.fill().
-        Arrays.fill(charArray,'\0');
-    } // clearCharArrayFromMemory()
+    }
 
     /**
      * Finds account names that contain or match the keyword provided.
-     * @param keyword Keyword for finding an account.
-     * @return An {@code ArrayList<String>} containing all the Account names that contain the keyword.
+     * @param keyword find accounts containing this keyword
+     * @return an {@code ArrayList<String>} containing all the Account names that contain the keyword
      */
     public static ArrayList<String> getAccountNamesContaining(String keyword){
         ArrayList<String> accountNamesContainingKeyword = new ArrayList<>();
@@ -224,22 +159,6 @@ public final class Handler {
         }
         return accountNamesContainingKeyword;
     }
-
-    /**
-     * Loads the account names from the credentials.csv file to memory for quicker access.
-     */
-    private static void loadAccountNames (){
-        try (BufferedReader br = new BufferedReader(new FileReader(VAULT_FILE))) {
-            int index = 0;
-            String line;
-            while ((line = br.readLine()) != null) {
-                accountNames[index++] = line.substring(0, line.indexOf(',')); // split up values in the line and store in String array
-
-            } // while
-
-        } // try
-        catch (IOException e) { e.printStackTrace(); }
-    } // loadAccountNames()
 
     /**
      * Method to print stored account names.
@@ -283,21 +202,6 @@ public final class Handler {
         System.out.println("\nERROR: Account does not exist.");
         return false;
     } // accountExists()
-
-    private static void sleep (){ // pauses code execution
-        try { Thread.sleep(CREDENTIAL_DISPLAY_TIMEOUT * 1000L); }
-        catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
-    } // sleep()
-
-    public static void clearScreen() { // clears terminal and console
-        try {
-            if (System.getProperty("os.name").contains("Windows"))
-                new ProcessBuilder("cmd", "/c", "cls").inheritIO().start().waitFor();
-            else
-                System.out.print("\033\143");
-        } catch (Exception e) { e.printStackTrace(); }
-    } // clearScreen()
-
 
 
     /*-----------------------------------------------------------------------------------------*/
@@ -423,21 +327,6 @@ public final class Handler {
         } while (true); // endless loop. return statements will take care of exit.
     } // getInput()
 
-    public static void openGitHubPage() {
-        try {
-            Desktop desktop = Desktop.getDesktop();
-
-            // Get the GitHub page URL from config.properties.
-            URI url = new URI(BIX_PROPERTIES.getProperty("github_page"));
-
-            // Open the URL.
-            desktop.browse(url);
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
     public static void executeShutdownProcedure() {
         // Clear the screen so that any sensitive information is erased from the terminal.
         clearScreen();
@@ -454,17 +343,63 @@ public final class Handler {
      * @param status The appropriate status code from enum {@code StatusCode}.
      */
     public static void terminateSession(StatusCode status) {
-        // Reassurance that the Master Password will always be cleared from the memory.
-        clearCharArrayFromMemory(MASTER_PASSWORD);
-
-        // Clearing the terminal.
-        clearScreen();
-
-        // Displaying the status message.
-        System.out.print("\nTerminating Bix session.");
+        // Clears screen and clear the master password from memory.
+        executeShutdownProcedure();
 
         // Terminating the session.
+        System.out.print("\nTerminating Bix session.");
         System.exit(status.getStatusCode());
-    } // terminateSession()
+    }
 
-} // class Handler
+    // Utility Functions.
+    /**
+     * Clears the terminal.
+     */
+    public static void clearScreen() {
+        try {
+            // For Windows systems.
+            if (System.getProperty("os.name").contains("Windows"))
+                new ProcessBuilder("cmd", "/c", "cls").inheritIO().start().waitFor();
+
+                // For Unix-based systems.
+            else
+                System.out.print("\033\143");
+        }
+        catch (Exception e) {
+            System.out.println("\nError: Unable to clear terminal");
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Clear character arrays from memory by setting its elements to null characters
+     */
+    private static void clearCharArrayFromMemory(char[] char_array){
+        // Setting every character in the array to null character('\0') using Arrays.fill().
+        Arrays.fill(char_array,'\0');
+    }
+
+    /**
+     * Function to pause code execution for set amount of time.
+     */
+    private static void sleep() {
+        try { Thread.sleep(CREDENTIAL_DISPLAY_DURATION * 1000L); }
+        catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
+    }
+
+    /**
+     * Opens the GitHub page for Bix in the default browser.
+     */
+    public static void openGitHubPage() {
+        try {
+            Desktop desktop = Desktop.getDesktop();
+
+            // Open the URL.
+            desktop.browse(GITHUB_URL);
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+} // class Controller
