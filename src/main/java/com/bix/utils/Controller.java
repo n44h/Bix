@@ -19,16 +19,21 @@ import static com.bix.utils.Reader.*;
  * This class handles all the backend operations of Bix.
  */
 public final class Controller {
+    // Manually set values.
     private static final String CONFIG_FILE = "config.properties";
     private static final String VAULT_FILE = "vault.db";
+    private static final String GITHUB_URL = "https://github.com/CookieCrumbs19212/Bix";
+
+    // Class constants.
     private static Properties BIX_PROPERTIES = new Properties();
     private static final Console CONSOLE = System.console();
     private static int AES_FLAVOR = AESFlavor.AES_128.toInteger();
     private static char[] MASTER_PASSWORD = null;
     private static String MASTER_PASSWORD_HASH; // stores the SHA256 hash of the master key.
     private static int CREDENTIAL_DISPLAY_DURATION;
-    private static URI GITHUB_URL;
+    private static URI GITHUB_PAGE;
 
+    // Global variables.
     private static boolean authSuccess = false; // FALSE by default, turns TRUE if the user authentication is successful.
     private static int vaultSize;
     private static String[] accountNames; // Stores the stored account names.
@@ -52,8 +57,8 @@ public final class Controller {
             int idleSessionTimeout = Integer.parseInt(BIX_PROPERTIES.getProperty("idle_session_timeout"));
             setIdleTimeout(idleSessionTimeout);
 
-            // Get Bix GitHub page URL from config file.
-            GITHUB_URL = new URI(BIX_PROPERTIES.getProperty("github_page"));
+            // Create the GitHub page URI object.
+            GITHUB_PAGE = new URI(GITHUB_URL);
         }
         catch (IOException ioe) {
             ioe.printStackTrace();
@@ -395,7 +400,7 @@ public final class Controller {
             Desktop desktop = Desktop.getDesktop();
 
             // Open the URL.
-            desktop.browse(GITHUB_URL);
+            desktop.browse(GITHUB_PAGE);
         }
         catch (Exception e) {
             e.printStackTrace();
