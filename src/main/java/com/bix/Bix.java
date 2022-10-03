@@ -5,10 +5,11 @@ import java.util.ArrayList;
 import java.util.Locale;
 
 import com.bix.enums.StatusCode;
-import com.bix.utils.Handler;
+import com.bix.utils.Controller;
 
-import static com.bix.utils.Handler.*;
 import static com.bix.utils.Reader.*;
+import static com.bix.utils.Controller.*;
+
 
 public final class Bix {
     // Creating console object.
@@ -34,7 +35,7 @@ public final class Bix {
 
     // Extended menu options String.
     private static final String EXT_MENU_OPTIONS = """
-                    Extended Menu:
+                    Bix Extended Menu:
                     
                     \t[5] Reset Master Password
                     
@@ -57,7 +58,7 @@ public final class Bix {
         // Adding a JVM shutdown hook. This thread will be executed when the JVM is shutting down.
         // This Shutdown Hook is for clearing the Master Password from memory when the session is terminated.
         // Carrying out shutdown procedure: clears sensitive information from the terminal and memory.
-        Runtime.getRuntime().addShutdownHook(new Thread(Handler::executeShutdownProcedure));
+        Runtime.getRuntime().addShutdownHook(new Thread(Controller::executeShutdownProcedure));
 
         // Running the Bix setup.
         setup();
@@ -95,7 +96,7 @@ public final class Bix {
 
                 // Retrieve Account.
                 case '1':
-                    System.out.println("\nRetrieve Account Login Credentials");
+                    System.out.println("\nRetrieve Account");
 
                     // Boolean to indicate if the account has been found.
                     boolean retrievedAccount = false;
