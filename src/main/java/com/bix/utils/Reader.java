@@ -23,14 +23,11 @@ import com.bix.enums.StatusCode;
 public final class Reader {
     private static final Scanner SCANNER = new Scanner(System.in);
 
-    /* idle_timeout stores how long a session can be idle in milliseconds.
-     * Default is 10 minutes.
-     * Lower limit is 1 minutes. Upper limit is 20 minutes.
-     *
-     * Multiply by 1000 because the Timer.schedule() method
-     * takes milliseconds as the parameter.
+    /* IDLE_TIMEOUT dictates how long a session can be idle in seconds.
+     * Default is 5 minutes (300 seconds).
+     * Lower limit is 30 seconds. Upper limit is 20 minutes (1200 seconds).
      */
-    private static long idle_timeout = 600 * 1000;
+    private static int IDLE_TIMEOUT = 5 * 60;
 
     /* Timer object starts a background thread.
      * TimerTask is a task that can be scheduled and linked to the Timer object.
@@ -38,14 +35,14 @@ public final class Reader {
      * session has been idle for a certain period of time (determined by idle_timeout).
      *
      * The task in our case is terminating the current Bix session.
-     * And so, the TimerTask object calls the Handler.terminateSession().
+     * And so, the TimerTask object calls the Controller.terminateSession().
      */
-    private static final Timer idle_session_timer = new Timer();
-    private static final TimerTask terminate_idle_session_task = new TimerTask() {
+    private static final Timer IDLE_SESSION_TIMER = new Timer();
+    private static final TimerTask TERMINATE_IDLE_SESSION_TASK = new TimerTask() {
         @Override
         public void run() {
             SCANNER.close();
-            Handler.terminateSession(StatusCode.IDLE_SESSION_TIMEOUT);
+            Controller.terminateSession(StatusCode.IDLE_SESSION_TIMEOUT);
         }
     };
 
@@ -82,17 +79,17 @@ public final class Reader {
     }
 
     /**
-     * Sets a new idle session timeout. Default timeout is 420 seconds (7 minutes).
+     * Sets a new idle session timeout. Default timeout is 300 seconds (5 minutes).
      * As a reasonable security measure, the new timeout cannot exceed 1200 seconds (20 minutes).
-     * New timeout can also not be less than 60 seconds (1 minute).
+     * New timeout can also not be less than 30 seconds.
      *
-     * @param new_timeout The new idle session timeout in seconds.
+     * @param newTimeout new idle session timeout in seconds.
      */
-    public static void setIdleTimeout(int new_timeout){
-        if(new_timeout < 60)
-            idle_timeout = 60 * 1000;
+    public static void setIdleTimeout(int newTimeout){
+        if(newTimeout < 30)
+            IDLE_TIMEOUT = 30;
         else
-            idle_timeout = Math.min(new_timeout, 1200) * 1000;
+            IDLE_TIMEOUT = Math.min(newTimeout, 20 * 60);
     } // setIdleTimeout()
 
     /**
@@ -110,10 +107,11 @@ public final class Reader {
     public static void startIdleSessionMonitor(){
         // Cancel any existing scheduled tasks in the thread.
         // This is useful when restarting the timer after user activity is detected.
-        idle_session_timer.cancel();
+        IDLE_SESSION_TIMER.cancel();
 
         // Scheduling the idle session termination task again.
-        idle_session_timer.schedule(terminate_idle_session_task, idle_timeout);
+        // Multiply IDLE_TIMEOUT by 1000 because Timer.schedule() takes arguments in milliseconds.
+        IDLE_SESSION_TIMER.schedule(TERMINATE_IDLE_SESSION_TASK, IDLE_TIMEOUT * 1000L);
     } // startIdleSessionTimer()
 
 } // class Reader
