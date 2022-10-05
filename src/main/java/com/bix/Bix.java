@@ -1,6 +1,5 @@
 package com.bix;
 
-import java.io.Console;
 import java.util.ArrayList;
 import java.util.Locale;
 
@@ -9,47 +8,84 @@ import com.bix.utils.Controller;
 
 import static com.bix.utils.Reader.*;
 import static com.bix.utils.Controller.*;
+import static com.bix.utils.VaultInterface.isBixSetupComplete;
+import static com.bix.utils.VaultInterface.purgeVault;
 
 
 public final class Bix {
-    // Creating console object.
-    private static final Console CONSOLE = System.console();
-
     // Main menu options String.
     private static final String MAIN_MENU_OPTIONS = """
-                    Bix Main Menu:
+            Bix Main Menu:
 
-                    \t[1] Retrieve Account
+            \t[1] Retrieve Account
 
-                    \t[2] Add Account
+            \t[2] Add Account
 
-                    \t[3] Update Account
-                    
-                    \t[4] Delete Account
+            \t[3] Update Account
+            
+            \t[4] Delete Account
 
-                    \t[M] More Options
+            \t[M] More Options
+            
+            \t[H] Help
 
-                    \t[X] Exit Bix
-                    
-                    """;
+            \t[X] Exit Bix
+            
+            """;
 
     // Extended menu options String.
     private static final String EXT_MENU_OPTIONS = """
-                    Bix Extended Menu:
-                    
-                    \t[5] Reset Master Password
-                    
-                    \t[6] Import Vault
-                    
-                    \t[7] Export Vault
-                    
-                    \t[8] Purge Vault
-                    
-                    \t[9] Open Bix GitHub Page
-                    
-                    \t[X] Exit Bix
-                    
-                    """;
+            Bix Extended Menu:
+            
+            \t[5] Reset Master Password
+            
+            \t[6] Change Credential Display Duration
+            
+            \t[7] Change Idle Timeout Duration
+            
+            \t[8] Import Vault
+            
+            \t[9] Export Vault
+            
+            \t[P] Purge Vault
+            
+            \t[G] Open Bix GitHub Page
+            
+            \t[B] Back to Main Menu
+            
+            \t[X] Exit Bix
+            
+            """;
+
+    private static final String HELP_STRING = """
+            Bix Help
+            
+            [1] Retrieve Account - Retrieve a saved account's credentials
+            
+            [2] Add Account - Add a new account
+
+            [3] Update Account - Update an existing account's credentials
+            
+            [4] Delete Account - Delete a saved account
+            
+            
+            [5] Reset Master Password - Reset the Bix master password
+                  
+            [6] Change Credential Display Duration - Change the duration the credentials are displayed on the screen
+            
+            [7] Change Idle Timeout Duration - Change how long Bix can stay idle before terminating the session
+            
+            
+            [8] Import Vault - Import a Bix vault
+            
+            [9] Export Vault - Export the Bix vault
+            
+            [P] Purge Vault - Destroy the contents of the Bix vault. Use this option if you no longer intend to use Bix
+            
+            
+            [G] Open Bix GitHub Page - Open the GitHub page for Bix in the default browser
+            
+            """;
 
     // Variable to indicate whether to print the main menu or extended menu.
     private static boolean printMainMenu = true;
@@ -60,8 +96,10 @@ public final class Bix {
         // Carrying out shutdown procedure: clears sensitive information from the terminal and memory.
         Runtime.getRuntime().addShutdownHook(new Thread(Controller::executeShutdownProcedure));
 
-        // Running the Bix setup.
-        setup();
+        // Perform Bix setup if this is the first time running Bix.
+        if (!isBixSetupComplete()) {
+            setup();
+        }
 
         // Greet user.
         clearScreen();
@@ -71,8 +109,7 @@ public final class Bix {
                            """, getUsernameFromSystem());
 
         // Authenticate User.
-        char[] masterPassword = getMasterPasswordFromUser(); // get the master password securely.
-        authenticateUser(masterPassword);
+        authenticateUser();
 
         // Bix Menu loop.
         char userMenuChoice;
@@ -83,16 +120,13 @@ public final class Bix {
             else {
                 // Printing extended menu options.
                 System.out.print(EXT_MENU_OPTIONS);
-
-                // Set the printMainMenu to true again.
-                printMainMenu = true;
             }
 
             // Reading user's menu choice.
             userMenuChoice = readChar("> Enter Menu option: ");
 
             // Evaluating based on the menu option entered by the user.
-            switch (userMenuChoice) {
+            switch (Character.toUpperCase(userMenuChoice)) {
 
                 // Retrieve Account.
                 case '1':
@@ -109,7 +143,7 @@ public final class Bix {
 
                     // Loop will keep running till an account is found.
                     do{
-                        String keyword = readString("\n > Enter Account Name: ").toUpperCase(Locale.ROOT);
+                        String keyword = readString("> Enter Account Name: ").toUpperCase(Locale.ROOT);
                         // Finding all account names containing the keyword.
                         searchResults = getAccountNamesContaining(keyword);
 
@@ -147,12 +181,11 @@ public final class Bix {
                                 }
                                 break;
                         } // switch
-                    }while(!retrievedAccount);
+                    } while (!retrievedAccount);
                     break;
 
                 // Add Account.
                 case '2':
-                    addAccountLogin();
                     break;
 
                 // Update Account.
@@ -167,20 +200,24 @@ public final class Bix {
                 case '5':
                     break;
 
-                // Import Vault.
+                // Change Credential Display Duration.
                 case '6':
                     break;
 
-                // Export Vault.
+                // Change Idle Session Timeout.
                 case '7':
                     break;
 
-                // Purge Vault.
+                // Import Vault.
                 case '8':
                     break;
 
-                // Open GitHub page.
+                // Export Vault.
                 case '9':
+                    break;
+
+                // Open GitHub page.
+                case 'G':
                     // Open the Bix Repository GitHub page in the default browser.
                     openGitHubPage();
 
@@ -188,10 +225,43 @@ public final class Bix {
                     terminateSession(StatusCode.SAFE_TERMINATION);
                     break;
 
-                // View extended menu options.
+                case 'P':
+                    System.out.println("""
+                                WARNING: This will permanently delete all the saved accounts from the Bix vault.
+                                         This action is irreversible.
+                                         """);
+
+                    // Get confirmation to purge vault.
+                    String choice = readString("Confirm purge vault [N/y]: ").toLowerCase(Locale.ROOT);
+                    if (choice.equals("y") || choice.equals("yes")) {
+                        // Authenticate the user.
+                        if (authenticateUser()) {
+                            // Purge Vault.
+                            purgeVault();
+
+                            System.out.println("\nPurged Bix vault. All stored account details have been cleared.");
+                        }
+                        else {
+                            System.out.println("\nPurge Vault command aborted.");
+                        }
+                    }
+                    break;
+
+                // Show extended menu options.
                 case 'M':
                     // Setting to false, so the extended menu is printed in the next iteration of the loop.
                     printMainMenu = false;
+                    break;
+
+                // Go back to main menu.
+                case 'B':
+                    // Setting to false, so the extended menu is printed in the next iteration of the loop.
+                    printMainMenu = true;
+                    break;
+
+                case 'H':
+                    // Print the help string.
+                    System.out.print(HELP_STRING);
                     break;
 
                 default:
@@ -203,7 +273,7 @@ public final class Bix {
         // Terminating the Bix session.
         terminateSession(StatusCode.SAFE_TERMINATION);
 
-    } // main()
+    }
 
     /**
      * Retrieves the username of the current user from the system environment.
@@ -219,16 +289,7 @@ public final class Bix {
 
             // Capitalizing the first letter of the username and returning.
             return Character.toUpperCase(username.charAt(0)) + username.substring(1);
-        } catch (Exception e) {return "User";}
-    }// getUsernameFromSystem()
-
-    /**
-     * Gets the Master Password from the user in a secure manner.
-     * Precautions are taken to prevent the Master Password from being leaked.
-     */
-    private static char[] getMasterPasswordFromUser(){
-        System.out.print("\n > Enter Master Password: ");
-        return CONSOLE.readPassword(); // Getting the password from user.
-    } // getMasterPasswordFromUser()
+        } catch (Exception e) { return "User"; }
+    }
 
 } // class Bix
