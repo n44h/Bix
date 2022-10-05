@@ -13,6 +13,7 @@ import java.util.Properties;
 
 import static com.bix.utils.Crypto.*;
 import static com.bix.utils.Reader.*;
+import static com.bix.utils.VaultInterface.*;
 
 
 /**
@@ -26,7 +27,6 @@ public final class Controller {
 
     // Class constants.
     private static Properties BIX_PROPERTIES = new Properties();
-    private static final Console CONSOLE = System.console();
     private static int AES_FLAVOR = AESFlavor.AES_128.toInteger();
     private static char[] MASTER_PASSWORD = null;
     private static String MASTER_PASSWORD_HASH; // stores the SHA256 hash of the master key.
@@ -34,9 +34,6 @@ public final class Controller {
     private static URI GITHUB_PAGE;
 
     // Global variables.
-    private static boolean authSuccess = false; // FALSE by default, turns TRUE if the user authentication is successful.
-    private static int vaultSize;
-    private static String[] accountNames; // Stores the stored account names.
 
 
     // Static initializer.
@@ -72,39 +69,49 @@ public final class Controller {
             e.printStackTrace();
             terminateSession(StatusCode.UNKNOWN_RESOURCE_ERROR);
         }
-
-        // If the console object is null, terminate session.
-        if (CONSOLE == null)
-            terminateSession(StatusCode.CONSOLE_NOT_FOUND);
     }
 
     /**
      * Runs initial setup processes.
      */
     public static void setup() {
+        boolean passwordSetupComplete = false;
+
+        // Set up the vault.
+        VaultInterface.setupVault();
+
         // Set the master password for Bix.
-        setMasterPassword();
+        while (!passwordSetupComplete) {
+            passwordSetupComplete = setMasterPassword();
+        }
+
+        // Once setup is completed successfully, update bix_metadata table.
+        updateMetadata("setup_complete", "true");
     }
 
     /**
      * Sets the Master Password for Bix. Standard Password setting process.
      */
-    private static void setMasterPassword() {
-        String firstInput,secondInput; // stores the user's input
+    private static boolean setMasterPassword() {
+        char[] firstInput, secondInput; // stores the user's input
+
+        clearScreen();
 
         // Get the new Master Password from user.
-        firstInput = readString("\n > Enter your new Master Password (1st time) : ");
-        secondInput = readString("\n > Enter your new Master Password (2nd time) : ");
+        firstInput = readPassword("> Enter your new Master Password (1st time) : ");
+        secondInput = readPassword("> Enter your new Master Password (2nd time) : ");
 
         // Clearing the interface.
         clearScreen();
 
         // Checking that the first and second inputs match.
-        if (firstInput.equals(secondInput)) {
+        if (firstInput == secondInput) {
             MASTER_PASSWORD_HASH = getSHA256Hash(firstInput);
+            return true;
         }
         else {
-            System.out.println("\nThe two passwords you entered did not match. Failed to set Master Password.");
+            System.out.println("\nFailed to set Master Password: password inputs did not match. ");
+            return false;
         }
     }
 
@@ -116,20 +123,21 @@ public final class Controller {
         AES_FLAVOR = flavor.toInteger();
     }
 
-
     /**
      * Method to authenticate the user.
      */
-    public static void authenticateUser(char[] masterPassword) {
+    public static boolean authenticateUser() {
+        MASTER_PASSWORD = readPassword("Enter Master Password: ");
+
         // Authenticating Master Password input.
-        if (getSHA256Hash(new String(masterPassword)).equals(MASTER_PASSWORD_HASH)) { // comparing hash values
+        if (getSHA256Hash(MASTER_PASSWORD).equals(MASTER_PASSWORD_HASH)) {
             // Clear the screen and display the appropriate message.
             clearScreen();
             System.out.println("\nAuthentication successful.");
 
             // Copy the input char[] to the class variable MASTER_PASSWORD.
-            MASTER_PASSWORD = Arrays.copyOf(masterPassword, masterPassword.length);
-            authSuccess = true; // set the user authentication flag to true.
+            MASTER_PASSWORD = Arrays.copyOf(MASTER_PASSWORD, MASTER_PASSWORD.length);
+            return true;
         }
         // Failed authentication.
         else {
@@ -137,7 +145,7 @@ public final class Controller {
         }
 
         // Clear the input char[] from the memory.
-        clearCharArrayFromMemory(masterPassword);
+        //clearCharArrayFromMemory(MASTER_PASSWORD);
 
         /* NOTE:
          * Don't clear MASTER_PASSWORD from the memory after user authentication because
@@ -146,6 +154,7 @@ public final class Controller {
          * The MASTER_PASSWORD variable will automatically get cleared from the memory by the
          * terminateSession() method.
          */
+        return false;
     }
 
     /**
@@ -158,7 +167,7 @@ public final class Controller {
         // Converting the keyword to lower case because the .contains() method is case sensitive.
         keyword = keyword.toUpperCase(Locale.ROOT);
         // Looping through the accountNames array to find all account names that contain the keyword.
-        for(String account : accountNames){
+        for(String account : getAccountNames()){
             if(account.contains(keyword))
                 accountNamesContainingKeyword.add(account);
         }
@@ -189,24 +198,6 @@ public final class Controller {
         }
     } // printAccountNamesList()
 
-    public static boolean accountExists (String accountName){ // returns true if the account exists in credentials.csv
-        if (authSuccess) {
-            accountName = accountName.toUpperCase(); // since the account names are stored in uppercase in csv file
-            try (BufferedReader br = new BufferedReader(new FileReader(VAULT_FILE))) {
-                String line;
-                while ((line = br.readLine()) != null) {
-                    String[] values = line.split(","); // split up values in the line and store in String array
-                    if (values[0].contains(accountName)) {
-                        br.close();
-                        return true;
-                    }
-                } // while
-            } // try
-            catch (IOException e) { e.printStackTrace(); }
-        } // auth_success
-        System.out.println("\nERROR: Account does not exist.");
-        return false;
-    } // accountExists()
 
 
     /*-----------------------------------------------------------------------------------------*/
@@ -237,12 +228,12 @@ public final class Controller {
 
         // comparing hash values of user entered password and hash stored in csv file
         // Authenticating the key generated from the master password and salt to the target hash values[4].
-        if (!authenticateSecretKey(new String(MASTER_PASSWORD), salt, AES_FLAVOR, values[4])) {
+        if (!authenticateSecretKey(MASTER_PASSWORD, salt, AES_FLAVOR, values[4])) {
             terminateSession(StatusCode.AUTHENTICATION_FAILED);
         }
 
         // Decrypting ciphertext.
-        String plaintext = decrypt(ciphertext, new String(MASTER_PASSWORD), salt, iv, AES_FLAVOR);
+        String plaintext = decrypt(MASTER_PASSWORD, ciphertext, salt, iv, AES_FLAVOR);
 
 
         // Print credentials to Terminal.
@@ -255,44 +246,8 @@ public final class Controller {
 
     /*-----------------------------------------------------------------------------------------*/
 
-    public static void addAccountLogin() {
-        // get account information
-        String accountName = getInput("Account Name").toUpperCase();
-        String username = getInput("Account Username");
-        String password = getInput("Account Password");
-        clearScreen(); // clears all sensitive information from the screen
 
-        // Verifying the master key
-        // Comparing hash values
-        if (getSHA256Hash(new String(MASTER_PASSWORD)).equals(MASTER_PASSWORD_HASH)) {
-            System.out.println("\nAuthentication successful.");
-        }
-        else {
-            terminateSession(StatusCode.AUTHENTICATION_FAILED);
-        }
-
-        // creating new csv line entry
-        String plaintext = username + " " + password;
-        String newCsvEntry = accountName + "," + encrypt(plaintext, new String(MASTER_PASSWORD), AES_FLAVOR);
-
-        // writing to csv file
-        FileWriter csvWriter;
-        try {
-            csvWriter = new FileWriter(VAULT_FILE, true);
-            csvWriter.append(newCsvEntry);
-            csvWriter.append("\n");
-
-            csvWriter.flush();
-            csvWriter.close();
-        } catch (IOException e) { e.printStackTrace(); }
-
-        // Print success message.
-        System.out.println("Securely stored account credentials.");
-        //terminateSession(StatusCode.SAFE_TERMINATION);
-
-    } // createAccountLogin()
-
-    private static String getInput(String dataName) {
+    private static ArrayList<char[]> getCredentialsFromUser(String accountName) {
         /* The following do while loop is an infinite loop.
          *
          * This is so that if the user does not give a positive response for their input confirmation, the loop will
@@ -301,36 +256,38 @@ public final class Controller {
          * Once a positive response for the input confirmation is received from the user, the return statement will
          * effectively terminate the loop and the function call.
          */
+
+        ArrayList<char[]> credentials = new ArrayList<>();
+        char[] username, password1, password2;
+
+
+        // Get username.
+        username = readString(String.format("> Enter %s username: ", accountName)).toCharArray();
+
+
+        // Run loop to get the password.
         do {
-            // If the input is a password.
-            if (dataName.toUpperCase(Locale.ROOT).contains("PASSWORD")) {
+            // Get Password first time.
+            password1 = readPassword(String.format("> Enter %s password (1st time): ", accountName));
 
-                // Get Password first time.
-                System.out.print("\n > Enter " + dataName + " (1st time): ");
-                char[] password1 = CONSOLE.readPassword();
+            // Get Password second time.
+            password2 = readPassword(String.format("> Enter %s password (2nd time): ", accountName));
 
-                // Get Password second time.
-                System.out.print("\n > Enter " + dataName + " (2nd time): ");
-                char[] password2 = CONSOLE.readPassword();
+            // Check the first and second password entries match.
+            if (password1 != password2)
+                System.out.print("\nThe password inputs do not match. Try again.\n");
 
-                // Ensure the first and second password entries match.
-                if (password1 == password2)
-                    return new String(password1); // if they match, then return password1 as a String.
-                else // if they do not match.
-                    System.out.printf("\nThe %s inputs do not match. Please try again.\n", dataName);
-            }
-            // If input type is not password.
-            else {
-                // reading user input
-                String userInput = readString(String.format("> Enter %s: ", dataName));
+        } while (password1 != password2);
 
-                // Confirming user's input.
-                if (readString("\n *> Confirm this " + dataName + "? [Y]/[n]: "
-                                        ).toLowerCase().charAt(0) == 'y')
-                    return userInput; // return the value if user confirms.
-            }
-        } while (true); // endless loop. return statements will take care of exit.
-    } // getInput()
+
+        // Add the Username to credentials list.
+        credentials.add(username);
+
+        // Add the Password to credentials list.
+        credentials.add(password1);
+
+        return credentials;
+    }
 
     public static void executeShutdownProcedure() {
         // Clear the screen so that any sensitive information is erased from the terminal.
