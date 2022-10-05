@@ -1,6 +1,8 @@
 package com.bix.utils;
 
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
 import java.nio.charset.StandardCharsets;
 
 import java.security.MessageDigest;
@@ -8,6 +10,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.KeySpec;
+import java.util.Arrays;
 import java.util.Base64;
 
 import javax.crypto.Cipher;
@@ -37,7 +40,7 @@ final class Crypto {
      *
      * @return The {@code SHA256} hash of the input as a hexadecimal String
      */
-    static String getSHA256Hash(String input) {
+    static String getSHA256Hash(char[] input) {
         // Generating MessageDigest object initialized with the SHA-256 algorithm.
         MessageDigest md;
         try {
@@ -47,10 +50,14 @@ final class Crypto {
             throw new RuntimeException(e);
         }
 
+        // Converting char[] to byte[].
+        ByteBuffer byteBuffer = StandardCharsets.UTF_8.encode(CharBuffer.wrap(input));
+        byte[] inputAsBytes = Arrays.copyOf(byteBuffer.array(), byteBuffer.limit());
+
         /* md.digest() method generates the message digest of the input and returns a byte array.
          * The byte array is then converted into a hexadecimal String using toHexString(). */
-        return toHexString(md.digest(input.getBytes(StandardCharsets.UTF_8)));
-    } // getSHA256Hash()
+        return toHexString(md.digest(inputAsBytes));
+    }
 
     /**
      * Converts byte arrays to hexadecimal Strings
@@ -70,7 +77,7 @@ final class Crypto {
         while (hexString.length() < 64) { hexString.insert(0, '0'); }
 
         return hexString.toString();
-    } // toHexString()
+    }
 
 
     // AES Encryption
@@ -86,7 +93,7 @@ final class Crypto {
      *
      * @return a String containing comma separated values with the format: "CIPHERTEXT,SALT,IV,KEY_HASH"
      */
-    static String encrypt(String plaintext, String password, int flavor) {
+    static String encrypt(char[] plaintext, char[] password, int flavor) {
         try{
             // Generate random salt.
             byte[] salt = generateRandomSalt();
@@ -101,8 +108,12 @@ final class Crypto {
             Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
             cipher.init(Cipher.ENCRYPT_MODE, secretKey, iv);
 
+            // Convert the plaintext from char[] to byte[].
+            ByteBuffer byteBuffer = StandardCharsets.UTF_8.encode(CharBuffer.wrap(plaintext));
+            byte[] plaintextBytes = Arrays.copyOf(byteBuffer.array(), byteBuffer.limit());
+
             // Encrypting the plaintext and then encoding to Base64 String.
-            String ciphertext = Base64.getEncoder().encodeToString(cipher.doFinal(plaintext.getBytes()));
+            String ciphertext = Base64.getEncoder().encodeToString(cipher.doFinal(plaintextBytes));
 
             // Return comma separated values: "ciphertext(base64), salt(base64), iv(base64), hash of secretKey".
             return ( ciphertext + "," + Base64.getEncoder().encodeToString(salt) + "," +
@@ -113,7 +124,7 @@ final class Crypto {
             e.printStackTrace();
         }
         return "0";
-    } // encrypt()
+    }
 
     /**
      * Generates a random salt
@@ -124,7 +135,7 @@ final class Crypto {
         byte[] salt = new byte[16];
         RANDOM.nextBytes(salt);
         return salt;
-    } // generateRandomSalt()
+    }
 
     /**
      * Generates a random Initialization Vector
@@ -135,7 +146,7 @@ final class Crypto {
         byte[] iv = new byte[16];
         RANDOM.nextBytes(iv);
         return new IvParameterSpec(iv);
-    } // generateRandomIV()
+    }
 
     /**
      * Generates the Secret Key
@@ -148,14 +159,14 @@ final class Crypto {
      *
      * @return {@code SecretKey} object
      */
-    private static SecretKey getSecretKey(String password, byte[] salt, int algorithm) {
+    private static SecretKey getSecretKey(char[] password, byte[] salt, int algorithm) {
         SecretKey secretKey;
         try {
             // Create an instance of SecretKeyFactory with Password-Based Key Derivation Function 2 (PBKDF2).
             SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
 
             // Create a Key Specifications object.
-            KeySpec spec = new PBEKeySpec(password.toCharArray(), salt, 65536, algorithm);
+            KeySpec spec = new PBEKeySpec(password, salt, 65536, algorithm);
 
             // Generate the secret key
             secretKey = new SecretKeySpec(factory.generateSecret(spec).getEncoded(), "AES");
@@ -165,7 +176,7 @@ final class Crypto {
         }
 
         return secretKey;
-    } // getSecretKey()
+    }
 
     /**
      * Gets the hash of the Secret Key object
@@ -176,23 +187,20 @@ final class Crypto {
      */
     static String getKeyHash(SecretKey secretKey) {
         // Convert SecretKey object to byte array.
-        byte[] array = secretKey.getEncoded();
+        byte[] byteArray = secretKey.getEncoded();
 
-        // Initialize a StringBuilder to build the hex string.
-        StringBuilder hex = new StringBuilder();
-
-        // Convert each byte element in the array to hexadecimal and append it to StringBuilder object.
-        for (byte b : array)
-            hex.append(String.format("%02X", b));
+        // Converting byte[] to char[].
+        final CharBuffer charBuffer = StandardCharsets.UTF_8.decode(ByteBuffer.wrap(byteArray));
+        char[] hex = Arrays.copyOf(charBuffer.array(), charBuffer.limit());
 
         // Return the SHA256 hash of the hex string.
-        return getSHA256Hash(hex.toString());
-    }// getKeyHash()
+        return getSHA256Hash(hex);
+    }
 
     /**
-     * Compares secret key hash generated from {@code masterKey} and {@code salt} to the {@code target hash}
+     * Compares secret key hash generated from {@code masterPassword} and {@code salt} to the {@code target hash}
      *
-     * @param masterKey the master password
+     * @param masterPassword the master password
      *
      * @param salt the salt as a String
      *
@@ -200,13 +208,13 @@ final class Crypto {
      *
      * @return true if the hash of the generated secret key matches the target hash
      */
-    static boolean authenticateSecretKey(String masterKey, String salt, int algorithm, String targetHash) {
+    static boolean authenticateSecretKey(char[] masterPassword, String salt, int algorithm, String targetHash) {
         // Generate the secret key.
-        SecretKey secretKey = getSecretKey(masterKey, Base64.getDecoder().decode(salt), algorithm);
+        SecretKey secretKey = getSecretKey(masterPassword, Base64.getDecoder().decode(salt), algorithm);
 
         // Return true iff secret key is not null, and it is equal to the target hash.
         return secretKey != null && getKeyHash(secretKey).equals(targetHash);
-    } // authenticateSecretKey()
+    }
 
 
     // AES Decryption
@@ -225,7 +233,7 @@ final class Crypto {
      *
      * @return the decrypted plaintext as a String
      */
-    static String decrypt(String ciphertext, String password, String salt, String iv, int algorithm) {
+    static String decrypt(char[] password, String ciphertext, String salt, String iv, int algorithm) {
 
         // Generate secret key object.
         SecretKey secretKey = getSecretKey(password, Base64.getDecoder().decode(salt), algorithm);
@@ -248,6 +256,6 @@ final class Crypto {
         }
 
         return plaintext;
-    } // decrypt()
+    }
 
 } // class Crypto
