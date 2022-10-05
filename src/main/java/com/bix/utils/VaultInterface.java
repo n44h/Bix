@@ -42,15 +42,6 @@ public final class VaultInterface {
 
 
     /**
-     * Check if the initial Bix setup is complete.
-     *
-     * @return true if the initial Bix setup is complete.
-     */
-    public static boolean isBixSetupComplete() {
-        return Boolean.parseBoolean(getMetadata("setup_complete"));
-    }
-
-    /**
      * Performs the initial vault setup. Used during initial Bix setup.
      */
     public static void setupVault() {
@@ -62,6 +53,15 @@ public final class VaultInterface {
 
         // Create the accounts table if it does not already exist.
         createAccountsTable();
+    }
+
+    /**
+     * Check if the initial Bix setup is complete.
+     *
+     * @return true if the initial Bix setup is complete.
+     */
+    public static boolean isBixSetupComplete() {
+        return Boolean.parseBoolean(getMetadata("setup_complete"));
     }
 
 
