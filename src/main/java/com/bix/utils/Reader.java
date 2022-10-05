@@ -1,5 +1,6 @@
 package com.bix.utils;
 
+import java.io.Console;
 import java.util.Scanner;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -22,11 +23,9 @@ import com.bix.enums.StatusCode;
 
 public final class Reader {
     private static final Scanner SCANNER = new Scanner(System.in);
+    private static final Console CONSOLE = System.console();
 
-    /* IDLE_TIMEOUT dictates how long a session can be idle in seconds.
-     * Default is 5 minutes (300 seconds).
-     * Lower limit is 30 seconds. Upper limit is 20 minutes (1200 seconds).
-     */
+    // IDLE_TIMEOUT dictates how long a session can be idle in seconds
     private static int IDLE_TIMEOUT;
 
     /* Timer object starts a background thread.
@@ -51,7 +50,7 @@ public final class Reader {
      * As a reasonable security measure, the new timeout cannot exceed 1200 seconds (20 minutes).
      * New timeout can also not be less than 30 seconds.
      *
-     * @param newTimeout new idle session timeout in seconds.
+     * @param newTimeout new idle session timeout in seconds
      */
     public static void setIdleTimeout(int newTimeout) {
         if(newTimeout < 30)
@@ -62,8 +61,8 @@ public final class Reader {
 
     /**
      * Method to read a String input from the user.
-     * @param prompt The prompt to be printed to the user to get the input.
-     * @return {@code String} input from the user.
+     * @param prompt The prompt to be printed to the user
+     * @return String input
      */
     public static String readString(String prompt) {
         System.out.printf("\n%s", prompt);
@@ -73,8 +72,8 @@ public final class Reader {
 
     /**
      * Method to read a char input from the user.
-     * @param prompt The prompt to be printed to the user to get the input.
-     * @return {@code char} input from the user.
+     * @param prompt The prompt to be printed to the user
+     * @return a char input
      */
     public static char readChar(String prompt) {
         System.out.printf("\n%s", prompt);
@@ -84,13 +83,24 @@ public final class Reader {
 
     /**
      * Method to read an integer input from the user.
-     * @param prompt The prompt to be printed to the user to get the input.
-     * @return {@code int} input from the user.
+     * @param prompt The prompt to be printed to the user
+     * @return an int input
      */
     public static int readInt(String prompt) {
         System.out.printf("\n%s", prompt);
         startIdleSessionMonitor();
         return SCANNER.nextInt();
+    }
+
+    /**
+     * Method to read a password input from the user.
+     * @param prompt The prompt to be printed to the user
+     * @return a char array containing the password input
+     */
+    public static char[] readPassword(String prompt) {
+        System.out.printf("\n%s", prompt);
+        startIdleSessionMonitor();
+        return CONSOLE.readPassword();
     }
 
     /**
