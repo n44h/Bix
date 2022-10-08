@@ -4,7 +4,7 @@
 
 ## What is Bix?
 
-Bix is a console-based Account Credentials Manager.  
+Bix is a CLI tool to store and manage you accounts and passwords.  
 It encrypts and safely stores account credentials with your choice of AES flavor (128-bit, 192-bit, or 256-bit).
 
 ## Note
