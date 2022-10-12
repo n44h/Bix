@@ -4,6 +4,7 @@
 
 ## What is Bix?
 
-Bix is a CLI tool to store and manage you accounts and passwords securely.  
-It encrypts the account credentials using AES-256 bit encryption.
+Bix is a CLI tool to store and manage account login credentials securely.  
+
+The account credentials are encrypted using AES-256 bit encryption.
 
