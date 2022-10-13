@@ -12,8 +12,8 @@ import java.util.ArrayList;
 /**
  * Class to communicate with the SQLite database "vault.db".
  * The database contains 2 tables: "accounts" and "bix_metadata".
- * accounts table stores the encrypted account credentials.
- * bix_metadata table stores information critical to Bix operations.
+ * - accounts table stores the encrypted account credentials.
+ * - bix_metadata table stores information critical to Bix operations.
  */
 
 /* Note:
@@ -24,7 +24,7 @@ import java.util.ArrayList;
  * essentially referring to the "accounts" table inside the "vault.db" database.
  */
 
-public final class VaultInterface {
+public final class VaultController {
     // Variable to indicate whether initial setup is required.
     private static final String VAULT_RESOURCE_PATH = "vault.db";
 
@@ -53,15 +53,6 @@ public final class VaultInterface {
 
         // Create the accounts table if it does not already exist.
         createAccountsTable();
-    }
-
-    /**
-     * Check if the initial Bix setup is complete.
-     *
-     * @return true if the initial Bix setup is complete.
-     */
-    public static boolean isBixSetupComplete() {
-        return Boolean.parseBoolean(getMetadata("setup_complete"));
     }
 
 
@@ -181,6 +172,7 @@ public final class VaultInterface {
         // Add the metadata fields with default values.
         addMetadata("setup_complete", "false");
         addMetadata("master_password_hash", "null");
+        addMetadata("failed_login_attempts", 0);
     }
 
     /**
@@ -411,7 +403,7 @@ public final class VaultInterface {
 
 
     /**
-     * Add a metadata field to the "bix_metadata" table in the database.
+     * Add a metadata field with a String value to the "bix_metadata" table in the database.
      *
      * @param id the metadata id, must be unique
      * @param value the String value of the metadata
@@ -435,13 +427,37 @@ public final class VaultInterface {
     }
 
     /**
-     * Get a metadata value from the "bix_metadata" table.
+     * Add a metadata field with integer value to the "bix_metadata" table in the database.
+     *
+     * @param id the metadata id, must be unique
+     * @param value the integer value of the metadata
+     */
+    private static void addMetadata(String id, int value) {
+        // Construct SQL statement for inserting a new entry.
+        String insertStmt = "INSERT INTO bix_metadata(id,metadata_value) VALUES(?,?)";
+
+        try (Connection conn = connect();
+             PreparedStatement pstmt = conn.prepareStatement(insertStmt)) {
+            // Set the corresponding values of the insert statement.
+            pstmt.setString(1, id);
+            pstmt.setInt(2, value);
+
+            // Execute the prepared statement.
+            pstmt.executeUpdate();
+        }
+        catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Get a String metadata value from the "bix_metadata" table.
      *
      * @param id the id of the metadata
      *
-     * @return a String containing the metadata value
+     * @return a String metadata value
      */
-    public static String getMetadata(String id) {
+    public static String getStrMetadata(String id) {
         // Construct the SQL select statement.
         String selectStmt = "SELECT value FROM bix_metadata WHERE id = ?";
 
@@ -462,7 +478,34 @@ public final class VaultInterface {
     }
 
     /**
-     * Update a metadata value in the "bix_metadata" table.
+     * Get an integer metadata value from the "bix_metadata" table.
+     *
+     * @param id the id of the metadata
+     *
+     * @return an integer metadata value
+     */
+    public static int getIntMetadata(String id) {
+        // Construct the SQL select statement.
+        String selectStmt = "SELECT value FROM bix_metadata WHERE id = ?";
+
+        try (Connection conn = connect();
+             PreparedStatement pstmt = conn.prepareStatement(selectStmt)) {
+            // Set the id field.
+            pstmt.setString(1, id);
+
+            // Execute the select SQL statement and get the result set.
+            ResultSet rs = pstmt.executeQuery();
+
+            // Return the metadata value from the ResultSet.
+            return rs.getInt("metadata_value");
+        }
+        catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Update a String metadata value in the "bix_metadata" table.
      *
      * @param id the id of the metadata
      * @param value the new metadata value
@@ -476,6 +519,31 @@ public final class VaultInterface {
 
             // Set the corresponding values of the update statement.
             pstmt.setString(1, value);
+            pstmt.setString(2, id);
+
+            // Execute the update statement.
+            pstmt.executeUpdate();
+        }
+        catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Update an integer metadata value in the "bix_metadata" table.
+     *
+     * @param id the id of the metadata
+     * @param value the new metadata value
+     */
+    public static void updateMetadata(String id, int value) {
+        // Construct SQL statement to update an entry.
+        String updateStmt = "UPDATE bix_metadata SET value = ? WHERE id = ?";
+
+        try (Connection conn = connect();
+             PreparedStatement pstmt = conn.prepareStatement(updateStmt)) {
+
+            // Set the corresponding values of the update statement.
+            pstmt.setInt(1, value);
             pstmt.setString(2, id);
 
             // Execute the update statement.
@@ -502,4 +570,4 @@ public final class VaultInterface {
         }
     }
 
-} // class VaultInterface
+} // class VaultController
