@@ -119,7 +119,7 @@ final class Crypto {
             return ( ciphertext + "," + Base64.getEncoder().encodeToString(salt) + "," +
                     Base64.getEncoder().encodeToString(iv.getIV()) + "," + getKeyHash(secretKey));
         }
-        catch(Exception e){
+        catch(Exception e) {
             System.out.println("\n\nEncryption Process Failure");
             e.printStackTrace();
         }
