@@ -8,14 +8,15 @@ import com.bix.utils.Controller;
 
 import static com.bix.utils.Reader.*;
 import static com.bix.utils.Controller.*;
-import static com.bix.utils.VaultInterface.isBixSetupComplete;
-import static com.bix.utils.VaultInterface.purgeVault;
+import static com.bix.utils.VaultController.purgeVault;
 
 
 public final class Bix {
     // Main menu options String.
     private static final String MAIN_MENU_OPTIONS = """
             Bix Main Menu:
+            
+            \t[0] Display Stored Accounts
 
             \t[1] Retrieve Account
 
@@ -48,6 +49,8 @@ public final class Bix {
             \t[9] Export Vault
             
             \t[P] Purge Vault
+            
+            \t[R] Reset Bix
             
             \t[G] Open Bix GitHub Page
             
@@ -83,6 +86,9 @@ public final class Bix {
             [P] Purge Vault - Destroy the contents of the Bix vault. Use this option if you no longer intend to use Bix
             
             
+            [R] Reset Bix - This action will purge the Bix vault and remove the master password.
+            
+            
             [G] Open Bix GitHub Page - Open the GitHub page for Bix in the default browser
             
             """;
@@ -112,7 +118,8 @@ public final class Bix {
         authenticateUser();
 
         // Bix Menu loop.
-        char userMenuChoice;
+        String userMenuChoice, confirmChoice;
+
         do {
             if (printMainMenu)
                 // Printing main menu options.
@@ -123,13 +130,21 @@ public final class Bix {
             }
 
             // Reading user's menu choice.
-            userMenuChoice = readChar("> Enter Menu option: ");
+            userMenuChoice = readString("> Enter Menu option: ").toUpperCase(Locale.ROOT);
 
             // Evaluating based on the menu option entered by the user.
-            switch (Character.toUpperCase(userMenuChoice)) {
+            switch (userMenuChoice) {
+
+                // Display all saved accounts.
+                case "0":
+                    System.out.println("\nStored Accounts: ");
+
+                    // Print all the account names.
+                    printAccountNames(null);
+                    break;
 
                 // Retrieve Account.
-                case '1':
+                case "1":
                     System.out.println("\nRetrieve Account");
 
                     // Boolean to indicate if the account has been found.
@@ -185,39 +200,39 @@ public final class Bix {
                     break;
 
                 // Add Account.
-                case '2':
+                case "2":
                     break;
 
                 // Update Account.
-                case '3':
+                case "3":
                     break;
 
                 // Delete Account.
-                case '4':
+                case "4":
                     break;
 
                 // Reset Master Password.
-                case '5':
+                case "5":
                     break;
 
                 // Change Credential Display Duration.
-                case '6':
+                case "6":
                     break;
 
                 // Change Idle Session Timeout.
-                case '7':
+                case "7":
                     break;
 
                 // Import Vault.
-                case '8':
+                case "8":
                     break;
 
                 // Export Vault.
-                case '9':
+                case "9":
                     break;
 
                 // Open GitHub page.
-                case 'G':
+                case "G":
                     // Open the Bix Repository GitHub page in the default browser.
                     openGitHubPage();
 
@@ -225,20 +240,19 @@ public final class Bix {
                     terminateSession(StatusCode.SAFE_TERMINATION);
                     break;
 
-                case 'P':
+                case "P":
                     System.out.println("""
-                                WARNING: This will permanently delete all the saved accounts from the Bix vault.
+                                WARNING: All the saved accounts from the Bix vault will be permanently deleted.
                                          This action is irreversible.
                                          """);
 
                     // Get confirmation to purge vault.
-                    String choice = readString("Confirm purge vault [N/y]: ").toLowerCase(Locale.ROOT);
-                    if (choice.equals("y") || choice.equals("yes")) {
+                    confirmChoice = readString("Confirm purge vault [N/y]: ").toLowerCase(Locale.ROOT);
+                    if (confirmChoice.equals("y") || confirmChoice.equals("yes")) {
                         // Authenticate the user.
                         if (authenticateUser()) {
                             // Purge Vault.
                             purgeVault();
-
                             System.out.println("\nPurged Bix vault. All stored account details have been cleared.");
                         }
                         else {
@@ -247,19 +261,42 @@ public final class Bix {
                     }
                     break;
 
+                // Reset Bix to initial state.
+                case "R":
+                    System.out.println("""
+                                WARNING: All the saved accounts from the Bix vault will be permanently deleted.
+                                         The Bix master password will be removed.
+                                         This action is irreversible.
+                                         """);
+
+                    // Get confirmation to reset Bix.
+                    confirmChoice = readString("Confirm Bix reset [N/y]: ").toLowerCase(Locale.ROOT);
+                    if (confirmChoice.equals("y") || confirmChoice.equals("yes")) {
+                        // Authenticate the user.
+                        if (authenticateUser()) {
+                            // Reset Bix.
+                            resetBix();
+                            System.out.println("\nBix reset complete.");
+                        }
+                        else {
+                            System.out.println("\nBix reset command aborted.");
+                        }
+                    }
+                    break;
+
                 // Show extended menu options.
-                case 'M':
+                case "M":
                     // Setting to false, so the extended menu is printed in the next iteration of the loop.
                     printMainMenu = false;
                     break;
 
                 // Go back to main menu.
-                case 'B':
+                case "B":
                     // Setting to false, so the extended menu is printed in the next iteration of the loop.
                     printMainMenu = true;
                     break;
 
-                case 'H':
+                case "H":
                     // Print the help string.
                     System.out.print(HELP_STRING);
                     break;
@@ -268,7 +305,7 @@ public final class Bix {
                     System.out.println("Invalid menu option entered. Try again.");
             } // switch
 
-        } while(userMenuChoice != 'X');
+        } while(!userMenuChoice.equals("X"));
 
         // Terminating the Bix session.
         terminateSession(StatusCode.SAFE_TERMINATION);
@@ -279,7 +316,7 @@ public final class Bix {
      * Retrieves the username of the current user from the system environment.
      * @return User's name if one is found, otherwise, returns "User".
      */
-    private static String getUsernameFromSystem(){
+    private static String getUsernameFromSystem() {
         String username;
         try {
             if (System.getProperty("os.name").contains("Windows"))
