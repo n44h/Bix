@@ -13,7 +13,7 @@ import java.util.Properties;
 
 import static com.bix.utils.Crypto.*;
 import static com.bix.utils.Reader.*;
-import static com.bix.utils.VaultInterface.*;
+import static com.bix.utils.VaultController.*;
 
 
 /**
@@ -29,12 +29,12 @@ public final class Controller {
     private static Properties BIX_PROPERTIES = new Properties();
     private static int AES_FLAVOR = AESFlavor.AES_128.toInteger();
     private static char[] MASTER_PASSWORD = null;
-    private static String MASTER_PASSWORD_HASH; // stores the SHA256 hash of the master key.
     private static int CREDENTIAL_DISPLAY_DURATION;
     private static URI GITHUB_PAGE;
+    private static final int FAILED_LOGIN_ATTEMPT_LIMIT = 3;
 
     // Global variables.
-
+    private static int failedLoginAttempts = getIntMetadata("failed_login_attempts");
 
     // Static initializer.
     static {
@@ -72,13 +72,27 @@ public final class Controller {
     }
 
     /**
+     * Check if the initial Bix setup is complete.
+     *
+     * @return true if the initial Bix setup is complete.
+     */
+    public static boolean isBixSetupComplete() {
+        try {
+            return Boolean.parseBoolean(getStrMetadata("setup_complete"));
+        }
+        catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
      * Runs initial setup processes.
      */
     public static void setup() {
         boolean passwordSetupComplete = false;
 
         // Set up the vault.
-        VaultInterface.setupVault();
+        VaultController.setupVault();
 
         // Set the master password for Bix.
         while (!passwordSetupComplete) {
@@ -87,6 +101,17 @@ public final class Controller {
 
         // Once setup is completed successfully, update bix_metadata table.
         updateMetadata("setup_complete", "true");
+    }
+
+    /**
+     * Reset Bix to its initial state.
+     */
+    public static void resetBix() {
+        // Purge vault.
+        purgeVault();
+
+        // Clear Master Password.
+        clearCharArrayFromMemory(MASTER_PASSWORD);
     }
 
     /**
@@ -106,7 +131,8 @@ public final class Controller {
 
         // Checking that the first and second inputs match.
         if (firstInput == secondInput) {
-            MASTER_PASSWORD_HASH = getSHA256Hash(firstInput);
+            // Store the newly created Master Password's hash in the bix_metadata table.
+            updateMetadata("master_password_hash", getSHA256Hash(firstInput));
             return true;
         }
         else {
@@ -127,33 +153,33 @@ public final class Controller {
      * Method to authenticate the user.
      */
     public static boolean authenticateUser() {
-        MASTER_PASSWORD = readPassword("Enter Master Password: ");
+        // Get the Master Password hash.
+        String masterPasswordHash = getStrMetadata("master_password_hash");
 
-        // Authenticating Master Password input.
-        if (getSHA256Hash(MASTER_PASSWORD).equals(MASTER_PASSWORD_HASH)) {
-            // Clear the screen and display the appropriate message.
-            clearScreen();
-            System.out.println("\nAuthentication successful.");
+        clearScreen();
 
-            // Copy the input char[] to the class variable MASTER_PASSWORD.
-            MASTER_PASSWORD = Arrays.copyOf(MASTER_PASSWORD, MASTER_PASSWORD.length);
-            return true;
-        }
-        // Failed authentication.
-        else {
-            terminateSession(StatusCode.AUTHENTICATION_FAILED);
-        }
+        do {
+            // Get the Master Password from the user.
+            MASTER_PASSWORD = readPassword("Enter Master Password: ");
 
-        // Clear the input char[] from the memory.
-        //clearCharArrayFromMemory(MASTER_PASSWORD);
+            // Authenticating Master Password input.
+            if (getSHA256Hash(MASTER_PASSWORD).equals(masterPasswordHash)) {
+                clearScreen();
+                System.out.println("\nAuthentication successful.");
 
-        /* NOTE:
-         * Don't clear MASTER_PASSWORD from the memory after user authentication because
-         * you need it for encrypting and decrypting the vault and its contents.
-         *
-         * The MASTER_PASSWORD variable will automatically get cleared from the memory by the
-         * terminateSession() method.
-         */
+                // Reset failedLoginAttempts to 0.
+                failedLoginAttempts = 0;
+
+                return true;
+            }
+            // Failed authentication.
+            else {
+                clearScreen();
+                System.out.println("\nERROR: Incorrect Master Password.");
+                failedLoginAttempts++;
+            }
+        } while(failedLoginAttempts < FAILED_LOGIN_ATTEMPT_LIMIT);
+
         return false;
     }
 
