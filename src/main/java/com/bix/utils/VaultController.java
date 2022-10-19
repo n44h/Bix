@@ -1,5 +1,7 @@
 package com.bix.utils;
 
+import com.bix.exceptions.AccountNotFoundException;
+
 import java.sql.Statement;
 import java.sql.ResultSet;
 import java.sql.Connection;
@@ -8,6 +10,7 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 
 import java.util.ArrayList;
+import java.util.Locale;
 
 /**
  * Class to communicate with the SQLite database "vault.db".
@@ -24,7 +27,7 @@ import java.util.ArrayList;
  * essentially referring to the "accounts" table inside the "vault.db" database.
  */
 
-public final class VaultController {
+class VaultController {
     // Variable to indicate whether initial setup is required.
     private static final String VAULT_RESOURCE_PATH = "vault.db";
 
@@ -44,7 +47,7 @@ public final class VaultController {
     /**
      * Performs the initial vault setup. Used during initial Bix setup.
      */
-    public static void setupVault() {
+    static void setupVault() {
         // Clean up any junk data in the vault database.
         purgeVault();
 
@@ -80,7 +83,7 @@ public final class VaultController {
      *
      * @return true if the vault.db file is accessible
      */
-    public static boolean vaultExists() {
+    static boolean vaultExists() {
         // Connect to the database.
         try (Connection conn = DriverManager.getConnection(URL)) {
             // If the connection is successful, a non-null value is returned.
@@ -99,7 +102,7 @@ public final class VaultController {
      *
      * @return an int value
      */
-    public static int getVaultSize() {
+    static int getVaultSize() {
         int numberOfEntries;
 
         // Construct SQL statement to count entries in the "accounts" table.
@@ -128,7 +131,7 @@ public final class VaultController {
     /**
      * Create the accounts table in the database. Used during initial Bix setup.
      */
-    public static void createAccountsTable() {
+    private static void createAccountsTable() {
         // Construct SQL Statement for creating the "accounts" table.
         String createTableStmt = """
                 CREATE TABLE IF NOT EXISTS accounts (
@@ -152,7 +155,7 @@ public final class VaultController {
     /**
      * Create the bix_metadata table in the database. Used during initial Bix setup.
      */
-    public static void createMetadataTable() {
+    private static void createMetadataTable() {
         // Construct SQL Statement for creating the "bix_metadata" table.
         String createTableStmt = """
                 CREATE TABLE IF NOT EXISTS bix_metadata (
@@ -180,7 +183,7 @@ public final class VaultController {
      *
      * @param tableName the name of the table to delete from the database
      */
-    public static void deleteTable(String tableName) {
+    static void deleteTable(String tableName) {
         // Construct the SQL statement to delete a table if it exists.
         String deleteTableStmt = String.format("DROP TABLE IF EXISTS %s", tableName);
 
@@ -195,7 +198,7 @@ public final class VaultController {
     /**
      * Get a list of all the tables in the database.
      */
-    public static ArrayList<String> getTables() {
+    static ArrayList<String> getTables() {
         // ArrayList to store the tables.
         ArrayList<String> tables = new ArrayList<>();
 
@@ -222,7 +225,7 @@ public final class VaultController {
      *
      * @return an ArrayList containing the account names
      */
-    public static ArrayList<String> getAccountNames() {
+    static ArrayList<String> getAccountNames() {
         // Construct SQL statement to select all the account names from the accounts table.
         String selectAccNamesStmt = "SELECT account_name FROM accounts";
 
@@ -249,13 +252,52 @@ public final class VaultController {
     }
 
     /**
+     * Get a list of all the Account Names containing a particular keyword.
+     *
+     * @param keyword the keyword to search for
+     *
+     * @return a list containing account names
+     */
+    static ArrayList<String> getAccountNamesContaining(String keyword) {
+        // Convert the keyword to uppercase to perform a case-insensitive search.
+        keyword = keyword.toUpperCase(Locale.ROOT);
+
+        // Construct SQL statement to select all the account names from the accounts table.
+        String selectAccNamesStmt = "SELECT account_name FROM accounts WHERE UPPER(account_name) LIKE '%?%'";
+
+        // ArrayList to store the account names.
+        ArrayList<String> accountNames = new ArrayList<>();
+
+        try (Connection conn = connect();
+             PreparedStatement pstmt = conn.prepareStatement(selectAccNamesStmt)) {
+
+            // Set the corresponding values of the select statement.
+            pstmt.setString(1, keyword);
+
+            // Execute the select SQL statement and get the result set.
+            ResultSet rs = pstmt.executeQuery();
+
+            // Loop through every value in the result set and get the account names.
+            while (rs.next()) {
+                // Add the account name to the array.
+                accountNames.add(rs.getString(1));
+            }
+        }
+        catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+
+        return accountNames;
+    }
+
+    /**
      * Checks if a particular account name already exists in the vault.
      *
      * @param accountName the account name to check against the list of stored account names in the vault
      *
      * @return true if the account name exists in the vault
      */
-    public static boolean accountExists(String accountName) {
+    static boolean accountExists(String accountName) {
         return getAccountNames().contains(accountName);
     }
 
@@ -268,7 +310,7 @@ public final class VaultController {
      * @param iv the initialization vector used for encrypting ciphertext
      * @param secretHash secret hash of the secret key
      */
-    public static void addAccount(
+    static void addAccount(
             String accountName, String ciphertext, String salt, String iv, String secretHash) {
         // If the account name already exists in the vault, raise an error.
         if (accountExists(accountName))
@@ -301,10 +343,10 @@ public final class VaultController {
      *
      * @return a String[] containing the account information
      */
-    public static String[] retrieveAccount(String accountName) {
+    static String[] retrieveAccount(String accountName) throws AccountNotFoundException {
         // Return null if the account does not exist in the vault.
         if (!accountExists(accountName))
-            return null;
+            throw new AccountNotFoundException(accountName);
 
         // Construct the SQL select statement.
         String selectStmt = "SELECT * FROM accounts WHERE account_name = ?";
@@ -338,11 +380,13 @@ public final class VaultController {
      * @param iv the new initialization vector used for encrypting ciphertext
      * @param secretHash the updated secret hash of the secret key
      */
-    public static void updateAccount(
-            String accountName, String ciphertext, String salt, String iv, String secretHash) {
+    static void updateAccount(
+            String accountName, String ciphertext, String salt, String iv, String secretHash)
+            throws AccountNotFoundException {
+
         // Exit function if the account does not exist in the vault.
         if (!accountExists(accountName))
-            return;
+            throw new AccountNotFoundException(accountName);
 
         // Construct SQL statement to update an account entry.
         String updateStmt = """
@@ -376,7 +420,7 @@ public final class VaultController {
      *
      * @param accountName name of the account to delete from the vault
      */
-    public static void deleteAccount(String accountName) {
+    static void deleteAccount(String accountName) {
         // Exit function if the account does not exist in the vault.
         if (!accountExists(accountName))
             return;
@@ -457,7 +501,7 @@ public final class VaultController {
      *
      * @return a String metadata value
      */
-    public static String getStrMetadata(String id) {
+    static String getStrMetadata(String id) {
         // Construct the SQL select statement.
         String selectStmt = "SELECT value FROM bix_metadata WHERE id = ?";
 
@@ -484,7 +528,7 @@ public final class VaultController {
      *
      * @return an integer metadata value
      */
-    public static int getIntMetadata(String id) {
+    static int getIntMetadata(String id) {
         // Construct the SQL select statement.
         String selectStmt = "SELECT value FROM bix_metadata WHERE id = ?";
 
@@ -510,7 +554,7 @@ public final class VaultController {
      * @param id the id of the metadata
      * @param value the new metadata value
      */
-    public static void updateMetadata(String id, String value) {
+    static void updateMetadata(String id, String value) {
         // Construct SQL statement to update an entry.
         String updateStmt = "UPDATE bix_metadata SET value = ? WHERE id = ?";
 
@@ -535,7 +579,7 @@ public final class VaultController {
      * @param id the id of the metadata
      * @param value the new metadata value
      */
-    public static void updateMetadata(String id, int value) {
+    static void updateMetadata(String id, int value) {
         // Construct SQL statement to update an entry.
         String updateStmt = "UPDATE bix_metadata SET value = ? WHERE id = ?";
 
@@ -563,7 +607,7 @@ public final class VaultController {
      * This function is reserved for destroying the Bix vault at the user's request.
      * Unsurprisingly, this process is irreversible.
      */
-    public static void purgeVault() {
+    static void purgeVault() {
         // Delete tables.
         for (String table : getTables()) {
             deleteTable(table);
