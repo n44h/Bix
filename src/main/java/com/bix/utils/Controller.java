@@ -8,7 +8,6 @@ import java.io.*;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Locale;
 import java.util.Properties;
 
 import static com.bix.utils.Crypto.*;
@@ -188,16 +187,8 @@ public final class Controller {
      * @param keyword find accounts containing this keyword
      * @return an {@code ArrayList<String>} containing all the Account names that contain the keyword
      */
-    public static ArrayList<String> getAccountNamesContaining(String keyword){
-        ArrayList<String> accountNamesContainingKeyword = new ArrayList<>();
-        // Converting the keyword to lower case because the .contains() method is case sensitive.
-        keyword = keyword.toUpperCase(Locale.ROOT);
-        // Looping through the accountNames array to find all account names that contain the keyword.
-        for(String account : getAccountNames()){
-            if(account.contains(keyword))
-                accountNamesContainingKeyword.add(account);
-        }
-        return accountNamesContainingKeyword;
+    public static ArrayList<String> getAccountNamesContaining(String keyword) {
+        return VaultController.getAccountNamesContaining(keyword);
     }
 
     /**
@@ -207,7 +198,7 @@ public final class Controller {
      * @param prompt Prompt to find account names containing a specific String.
      *               Prints all account names when set to {@code null}.
      */
-    public static void printAccountNames (String prompt) {
+    public static void printAccountNames(String prompt) {
         // If prompt is null, print all account names.
         if (prompt==null) {
             try (BufferedReader br = new BufferedReader(new FileReader(VAULT_FILE))) {
@@ -228,50 +219,60 @@ public final class Controller {
 
     /*-----------------------------------------------------------------------------------------*/
 
-    public static void printCredentialsFor(String accountName){
-        /* credentials.csv file format:
-         *  account_name ,  ciphertext  ,     salt     ,     iv      , secret_key hash
-         *    values[0]      values[1]      values[2]     values[3]       values[4]
+    public static void printCredentials(String accountName){
+        /* Contents of the String[] returned by retrieveAccount():
+         * +--------------+--------------+--------------+--------------+--------------+--------------+--------------+
+         * | values[0]    | values[1]    | values[2]    | values[3]    | values[4]    | values[5]    | values[6]    |
+         * |--------------|--------------|--------------|--------------|--------------|--------------|--------------|
+         * | account_name | email        | ciphertext_u | ciphertext_p | salt         | iv           | secret_hash  |
+         * +--------------+--------------+--------------+--------------+--------------+--------------+--------------+
          */
 
-        String[] values = null; // to store each value of a comma separated value line
-        try (BufferedReader br = new BufferedReader(new FileReader(VAULT_FILE))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                values = line.split(","); // split up values in the line and store in String array
+        String associatedEmail, ciphertextUsername, ciphertextPassword, salt, iv, secretKeyHash;
 
-                if (values[0].contains(accountName)) {
-                    break;
-                } // checking if account is found
-            } // while
-        } // try
-        catch (IOException e) { e.printStackTrace(); }
+        try {
+            String[] values = retrieveAccount(accountName);
 
-        assert values != null;
-        String ciphertext = values[1];
-        String salt = values[2];
-        String iv = values[3];
+            // Store values in appropriate variables.
+            accountName = values[0];
+            associatedEmail = values[1];
+            ciphertextUsername = values[2];
+            ciphertextPassword= values[3];
+            salt = values[4];
+            iv = values[5];
+            secretKeyHash = values[6];
+        }
+        catch (Exception ae) {
+            System.out.println(ae.getMessage());
+            return;
+        }
 
-        // comparing hash values of user entered password and hash stored in csv file
-        // Authenticating the key generated from the master password and salt to the target hash values[4].
-        if (!authenticateSecretKey(MASTER_PASSWORD, salt, AES_FLAVOR, values[4])) {
+        // Authenticating the key generated with the master password and salt to the secretKeyHash.
+        if (!authenticateSecretKey(MASTER_PASSWORD, salt, AES_FLAVOR, secretKeyHash)) {
             terminateSession(StatusCode.AUTHENTICATION_FAILED);
         }
 
         // Decrypting ciphertext.
-        String plaintext = decrypt(MASTER_PASSWORD, ciphertext, salt, iv, AES_FLAVOR);
+        char[] username = decrypt(MASTER_PASSWORD, ciphertextUsername, salt, iv, AES_FLAVOR);
+        char[] password = decrypt(MASTER_PASSWORD, ciphertextPassword, salt, iv, AES_FLAVOR);
 
+        // Clear Screen and display account name.
+        clearScreen();
+        System.out.println(accountName);
 
         // Print credentials to Terminal.
-        System.out.println("\nUsername: " + plaintext.substring(0, plaintext.indexOf(" ")));
-        System.out.println("Password: " + plaintext.substring(plaintext.indexOf(" ") + 1));
-        sleep(); // Sleeps for a preset duration.
-        clearScreen(); // Clear credentials from the screen.
+        System.out.printf("\nUsername         : %s", Arrays.toString(username));
+        System.out.printf("\nPassword         : %s", Arrays.toString(password));
+        System.out.printf("\nAssociated email : %s", associatedEmail == null ? "nil" : associatedEmail);
 
-    } // printCredentialsFor()
+        // Clear credentials from memory.
+        clearCharArrayFromMemory(username);
+        clearCharArrayFromMemory(password);
 
-    /*-----------------------------------------------------------------------------------------*/
-
+        // Sleeps for a preset duration then clear the credentials from the screen.
+        sleep();
+        clearScreen();
+    }
 
     private static ArrayList<char[]> getCredentialsFromUser(String accountName) {
         /* The following do while loop is an infinite loop.
@@ -284,15 +285,23 @@ public final class Controller {
          */
 
         ArrayList<char[]> credentials = new ArrayList<>();
-        char[] username, password1, password2;
+        char[] username, password1, password2, email;
 
 
         // Get username.
         username = readString(String.format("> Enter %s username: ", accountName)).toCharArray();
 
+        // Add the Username to credentials list.
+        credentials.add(username);
+
+        clearScreen();
 
         // Run loop to get the password.
         do {
+            clearScreen();
+            System.out.print("NOTE: The password inputs will not be visible on the screen as you type.\n" +
+                             "      Your keyboard inputs will be directly registered by Bix.\n\n");
+
             // Get Password first time.
             password1 = readPassword(String.format("> Enter %s password (1st time): ", accountName));
 
@@ -300,29 +309,61 @@ public final class Controller {
             password2 = readPassword(String.format("> Enter %s password (2nd time): ", accountName));
 
             // Check the first and second password entries match.
-            if (password1 != password2)
-                System.out.print("\nThe password inputs do not match. Try again.\n");
+            if (password1 != password2) {
+                System.out.print("\nThe password inputs do not match. Try again in 5 seconds.\n");
+                sleep(5);
+            }
 
         } while (password1 != password2);
-
-
-        // Add the Username to credentials list.
-        credentials.add(username);
 
         // Add the Password to credentials list.
         credentials.add(password1);
 
+        clearScreen();
+
+        // Add associated email.
+        char userChoice = readChar("> Do you want to add an associated email for this account? [Y/n]: ");
+        if (Character.toUpperCase(userChoice) == 'Y') {
+            clearScreen();
+
+            email = readString(String.format("> Enter associated email for %s: ", accountName)).toCharArray();
+            credentials.add(email);
+        }
+        else {
+            // represents null value for email.
+            credentials.add(null);
+        }
+
+        clearScreen();
+
         return credentials;
     }
 
-    public static void executeShutdownProcedure() {
-        // Clear the screen so that any sensitive information is erased from the terminal.
-        clearScreen();
 
-        // If master password is not null, clear it from memory.
+    /**
+     * Performs the shutdown procedure. Clears master password from memory and clears the terminal.
+     */
+    public static void executeShutdownProcedure() {
+        // Clearing Master Password from memory.
         if (MASTER_PASSWORD != null) {
             // Setting every character in the char array to null character('\0') using Arrays.fill().
             Arrays.fill(MASTER_PASSWORD, '\0');
+        }
+
+
+        // Clearing screen.
+        try {
+            // For Windows systems.
+            if (System.getProperty("os.name").contains("Windows"))
+                new ProcessBuilder("cmd", "/c", "cls").inheritIO().start().waitFor();
+
+                // For Unix-based systems.
+            else
+                System.out.print("\033\143");
+        }
+        catch (Exception e) {
+            System.out.println("\nError: Unable to clear terminal");
+            e.printStackTrace();
         }
     }
 
@@ -372,6 +413,16 @@ public final class Controller {
      */
     private static void sleep() {
         try { Thread.sleep(CREDENTIAL_DISPLAY_DURATION * 1000L); }
+        catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
+    }
+
+    /**
+     * Function to pause code execution for set amount of time.
+     *
+     * @param duration the duration to sleep in seconds
+     */
+    private static void sleep(int duration) {
+        try { Thread.sleep(duration * 1000L); }
         catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
     }
 
