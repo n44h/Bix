@@ -233,7 +233,7 @@ final class Crypto {
      *
      * @return the decrypted plaintext as a String
      */
-    static String decrypt(char[] password, String ciphertext, String salt, String iv, int algorithm) {
+    static char[] decrypt(char[] password, String ciphertext, String salt, String iv, int algorithm) {
 
         // Generate secret key object.
         SecretKey secretKey = getSecretKey(password, Base64.getDecoder().decode(salt), algorithm);
@@ -242,14 +242,18 @@ final class Crypto {
         IvParameterSpec ivSpec = new IvParameterSpec(Base64.getDecoder().decode(iv));
 
         // Decrypting ciphertext.
-        String plaintext;
+        char[] plaintext;
         try {
             // Initialize Cipher object.
             Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING");
             cipher.init(Cipher.DECRYPT_MODE, secretKey, ivSpec);
 
             // Decrypting the ciphertext then converting the resulting byte array to a String.
-            plaintext = new String(cipher.doFinal(Base64.getDecoder().decode(ciphertext)));
+            byte[] plaintextByteArray = cipher.doFinal(Base64.getDecoder().decode(ciphertext));
+
+            // Converting byte[] to char[].
+            final CharBuffer charBuffer = StandardCharsets.UTF_8.decode(ByteBuffer.wrap(plaintextByteArray));
+            plaintext = Arrays.copyOf(charBuffer.array(), charBuffer.limit());
         }
         catch (Exception e) {
             throw new RuntimeException(e);
