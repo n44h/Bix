@@ -1,6 +1,6 @@
 package com.bix.utils;
 
-import com.bix.exceptions.AccountNotFoundException;
+import com.bix.exceptions.*;
 
 import java.sql.Statement;
 import java.sql.ResultSet;
@@ -11,6 +11,7 @@ import java.sql.PreparedStatement;
 
 import java.util.ArrayList;
 import java.util.Locale;
+import java.util.Objects;
 
 /**
  * Class to communicate with the SQLite database "vault.db".
@@ -25,6 +26,17 @@ import java.util.Locale;
  *
  * Conceptually, the "vault" contains all the account entries. And so, when referring to the "vault", we are
  * essentially referring to the "accounts" table inside the "vault.db" database.
+ */
+
+/* Columns in the vault database's "accounts" table:
+ * +--------------+--------------+--------------+--------------+--------------+--------------+--------------+
+ * | [0]          | [1]          | [2]          | [3]          | [4]          | [5]          | [6]          |
+ * |--------------|--------------|--------------|--------------|--------------|--------------|--------------|
+ * | account_name | email        | ciphertext_u | ciphertext_p | salt         | iv           | secret_hash  |
+ * +--------------+--------------+--------------+--------------+--------------+--------------+--------------+
+ * ciphertext_u is the encrypted username
+ * ciphertext_p is the encrypted password
+ * secret_hash is the SHA256 hash of the secret key (which is generated using thr master password and the salt)
  */
 
 class VaultController {
@@ -136,7 +148,9 @@ class VaultController {
         String createTableStmt = """
                 CREATE TABLE IF NOT EXISTS accounts (
                 	account_name TEXT PRIMARY KEY,
-                	ciphertext TEXT NOT NULL,
+                	associated_email TEXT,
+                	ciphertext_u TEXT NOT NULL,
+                	ciphertext_p TEXT NOT NULL,
                 	salt TEXT NOT NULL,
                 	iv TEXT NOT NULL,
                 	secret_hash TEXT NOT NULL
@@ -175,7 +189,6 @@ class VaultController {
         // Add the metadata fields with default values.
         addMetadata("setup_complete", "false");
         addMetadata("master_password_hash", "null");
-        addMetadata("failed_login_attempts", 0);
     }
 
     /**
@@ -305,28 +318,37 @@ class VaultController {
      * Add an account entry to the vault.
      *
      * @param accountName the account name
-     * @param ciphertext the ciphertext containing the encrypted username and password
+     * @param associatedEmail the email associated with the account, can be null
+     * @param ciphertextUsername the ciphertext containing the encrypted username
+     * @param ciphertextPassword the ciphertext containing the encrypted password
      * @param salt the salt used for encrypting ciphertext
      * @param iv the initialization vector used for encrypting ciphertext
      * @param secretHash secret hash of the secret key
      */
     static void addAccount(
-            String accountName, String ciphertext, String salt, String iv, String secretHash) {
+            String accountName, String associatedEmail, String ciphertextUsername, String ciphertextPassword,
+            String salt, String iv, String secretHash)
+            throws AccountAlreadyExistsException {
+
         // If the account name already exists in the vault, raise an error.
         if (accountExists(accountName))
-            throw new RuntimeException("An account with the name " + accountName + " already exists in the vault.");
+            throw new AccountAlreadyExistsException(accountName);
 
         // Construct SQL statement for inserting a new entry.
-        String insertStmt = "INSERT INTO accounts(account_name,ciphertext,salt,iv,secret_hash) VALUES(?,?,?,?,?)";
+        String insertStmt = "INSERT INTO " +
+                "accounts(account_name,associated_email,ciphertext_u,ciphertext_p,salt,iv,secret_hash) " +
+                "VALUES(?,?,?,?,?,?,?)";
 
         try (Connection conn = connect();
              PreparedStatement pstmt = conn.prepareStatement(insertStmt)) {
             // Set the corresponding values of the insert statement.
             pstmt.setString(1, accountName);
-            pstmt.setString(2, ciphertext);
-            pstmt.setString(3, salt);
-            pstmt.setString(4, iv);
-            pstmt.setString(5, secretHash);
+            pstmt.setString(2, Objects.requireNonNullElse(associatedEmail, "nil"));
+            pstmt.setString(3, ciphertextUsername);
+            pstmt.setString(4, ciphertextPassword);
+            pstmt.setString(5, salt);
+            pstmt.setString(6, iv);
+            pstmt.setString(7, secretHash);
 
             // Execute the prepared statement.
             pstmt.executeUpdate();
@@ -361,7 +383,9 @@ class VaultController {
 
             // Unpack the ResultSet into a String array.
             return new String[] {rs.getString("account_name"),
-                    rs.getString("ciphertext"),
+                    rs.getString("associated_email"),
+                    rs.getString("ciphertext_u"),
+                    rs.getString("ciphertext_p"),
                     rs.getString("salt"),
                     rs.getString("iv"),
                     rs.getString("secret_hash")};
@@ -375,13 +399,16 @@ class VaultController {
      * Update an existing account entry in the vault.
      *
      * @param accountName the account name (primary key in the database)
-     * @param ciphertext the updated ciphertext containing the encrypted username and password
+     * @param associatedEmail the email associated with the account, can be null
+     * @param ciphertextUsername the ciphertext containing the encrypted username
+     * @param ciphertextPassword the ciphertext containing the encrypted password
      * @param salt the new salt used for encrypting ciphertext
      * @param iv the new initialization vector used for encrypting ciphertext
      * @param secretHash the updated secret hash of the secret key
      */
     static void updateAccount(
-            String accountName, String ciphertext, String salt, String iv, String secretHash)
+            String accountName, String associatedEmail, String ciphertextUsername, String ciphertextPassword,
+            String salt, String iv, String secretHash)
             throws AccountNotFoundException {
 
         // Exit function if the account does not exist in the vault.
@@ -391,7 +418,9 @@ class VaultController {
         // Construct SQL statement to update an account entry.
         String updateStmt = """
                 UPDATE accounts
-                SET ciphertext = ?,
+                SET associated_email = ?,
+                ciphertext_u = ?,
+                ciphertext_p = ?,
                 salt = ?,
                 iv = ?,
                 secret_hash = ?
@@ -401,11 +430,13 @@ class VaultController {
              PreparedStatement pstmt = conn.prepareStatement(updateStmt)) {
 
             // Set the corresponding values of the update statement.
-            pstmt.setString(1, ciphertext);
-            pstmt.setString(2, salt);
-            pstmt.setString(3, iv);
-            pstmt.setString(4, secretHash);
-            pstmt.setString(5, accountName);
+            pstmt.setString(1, Objects.requireNonNullElse(associatedEmail, "nil"));
+            pstmt.setString(2, ciphertextUsername);
+            pstmt.setString(3, ciphertextPassword);
+            pstmt.setString(4, salt);
+            pstmt.setString(5, iv);
+            pstmt.setString(6, secretHash);
+            pstmt.setString(7, accountName);
 
             // Execute the update statement.
             pstmt.executeUpdate();
