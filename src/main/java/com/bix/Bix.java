@@ -253,19 +253,8 @@ public final class Bix extends Controller {
                                          This action is irreversible.
                                          """);
 
-                    // Get confirmation to purge vault.
-                    confirmChoice = readString("Confirm purge vault [N/y]: ").toLowerCase(Locale.ROOT);
-                    if (confirmChoice.equals("y") || confirmChoice.equals("yes")) {
-                        // Authenticate the user.
-                        if (authenticateUser()) {
-                            // Purge Vault.
-                            purgeVault();
-                            System.out.println("\nPurged Bix vault. All stored account details have been cleared.");
-                        }
-                        else {
-                            System.out.println("\nPurge Vault command aborted.");
-                        }
-                    }
+                    // Call Controller.purgeVault().
+                    purgeVault();
                     break;
 
                 // Reset Bix to initial state.
