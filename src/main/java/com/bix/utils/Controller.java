@@ -37,17 +37,13 @@ public class Controller {
 
     // Static initializer.
     static {
+        // Loading idleSessionTimeout, setting up Reader, and creating GitHub URI object.
         try {
             // Input stream from config file (config file is in the resource folder).
             InputStream configFileInputStream = Controller.class.getClassLoader().getResourceAsStream(CONFIG_FILE);
 
             // Loading the properties into BIX_PROPERTIES.
             BIX_PROPERTIES.load(configFileInputStream);
-
-            // Get the credentials display duration from config file.
-            // For security: maximum allowed duration is 10 minutes.
-            CREDENTIAL_DISPLAY_DURATION = Math.min(10 * 60,
-                    Integer.parseInt(BIX_PROPERTIES.getProperty("credential_display_duration")));
 
             // Set the idle session timeout in the Reader class.
             int idleSessionTimeout = Integer.parseInt(BIX_PROPERTIES.getProperty("idle_session_timeout"));
@@ -67,6 +63,16 @@ public class Controller {
         catch (Exception e) {
             e.printStackTrace();
             terminateSession(StatusCode.UNKNOWN_RESOURCE_ERROR);
+        }
+
+        // Load variables from metadata table if setup is complete.
+        if(isBixSetupComplete()) {
+            // Load the AES flavor.
+            AES_FLAVOR = AESFlavor.fromString(getStrMetadata("aes_flavor"));
+
+            // Load the credential display duration.
+            // For security: maximum allowed duration is 10 minutes.
+            CREDENTIAL_DISPLAY_DURATION = Math.min(10 * 60, getIntMetadata("credential_display_duration"));
         }
     }
 
@@ -182,6 +188,9 @@ public class Controller {
             userChoice = readChar(String.format("> Confirm your choice (AES-%d) [N/y]: ", AES_FLAVOR.toInteger()));
 
         } while(!(Character.toUpperCase(userChoice) == 'Y'));
+
+        // Save the AES flavor to the metadata table.
+        updateMetadata("aes_flavor", AES_FLAVOR.toString());
     }
 
     /**
@@ -228,26 +237,22 @@ public class Controller {
     }
 
     /**
-     * Method to print stored account names.
-     * Prints the account names containing the String {@code prompt}.
-     *
-     * @param prompt Prompt to find account names containing a specific String.
-     *               Prints all account names when set to {@code null}.
+     * Print all the account names stored in Bix.
      */
-    protected static void printAccountNames(String prompt) {
-        // If prompt is null, print all account names.
-        if (prompt==null) {
-            try (BufferedReader br = new BufferedReader(new FileReader(VAULT_FILE))) {
-                String line;
-                System.out.println("\nStored Accounts: ");
-                while ((line = br.readLine()) != null) {
-                    String[] values = line.split(","); // split up values in the line and store in String array
-                    System.out.println(values[0]); // printing account names
+    protected static void printAccountNames() {
+        for(String accountName : getAccountNames()) {
+            System.out.println(accountName);
+        }
+    }
 
-                } // while
-
-            } // try
-            catch (IOException e) { e.printStackTrace(); }
+    /**
+     * Print account names containing a specified keyword.
+     *
+     * @param keyword keyword to look for in account names
+     */
+    protected static void printAccountNames(String keyword) {
+        for(String accountName : getAccountNamesContaining(keyword)) {
+            System.out.println(accountName);
         }
     }
 
