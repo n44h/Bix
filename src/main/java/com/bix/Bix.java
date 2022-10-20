@@ -7,11 +7,9 @@ import com.bix.enums.StatusCode;
 import com.bix.utils.Controller;
 
 import static com.bix.utils.Reader.*;
-import static com.bix.utils.Controller.*;
-import static com.bix.utils.VaultController.purgeVault;
 
 
-public final class Bix {
+public final class Bix extends Controller {
     // Main menu options String.
     private static final String MAIN_MENU_OPTIONS = """
             Bix Main Menu:
@@ -48,11 +46,15 @@ public final class Bix {
             
             \t[9] Export Vault
             
-            \t[P] Purge Vault
-            
-            \t[R] Reset Bix
-            
             \t[G] Open Bix GitHub Page
+            
+            +---------------------+
+            |   DANGER ZONE:      |
+            |---------------------|
+            |   [P] Purge Vault   |
+            |                     |
+            |   [R] Reset Bix     |
+            +---------------------+
             
             \t[B] Back to Main Menu
             
@@ -63,13 +65,15 @@ public final class Bix {
     private static final String HELP_STRING = """
             Bix Help
             
-            [1] Retrieve Account - Retrieve a saved account's credentials
+            [0] Display Stored Accounts - Prints the names of all the stored accounts
+            
+            [1] Retrieve Account - Retrieve a stored account's credentials
             
             [2] Add Account - Add a new account
 
             [3] Update Account - Update an existing account's credentials
             
-            [4] Delete Account - Delete a saved account
+            [4] Delete Account - Delete a stored account
             
             
             [5] Reset Master Password - Reset the Bix master password
@@ -140,7 +144,7 @@ public final class Bix {
                     System.out.println("\nStored Accounts: ");
 
                     // Print all the account names.
-                    printAccountNames(null);
+                    printAccountNames();
                     break;
 
                 // Retrieve Account.
@@ -153,12 +157,14 @@ public final class Bix {
                     // ArrayList that stores all the accounts that contain the keyword entered by the user.
                     ArrayList<String> searchResults;
 
-                    // Displaying all stored account names.
-                    printAccountNames(null);
-
                     // Loop will keep running till an account is found.
+                    String keyword;
                     do{
-                        String keyword = readString("> Enter Account Name: ").toUpperCase(Locale.ROOT);
+                        clearScreen();
+
+                        // Get keyword from user.
+                        keyword = readString("> Enter Account Name: ").toUpperCase(Locale.ROOT);
+
                         // Finding all account names containing the keyword.
                         searchResults = getAccountNamesContaining(keyword);
 
@@ -170,23 +176,24 @@ public final class Bix {
 
                             // Only one account name contains the keyword, retrieve the information for that account.
                             case 1:
-                                printCredentialsFor(searchResults.get(0));
+                                printCredentials(searchResults.get(0));
                                 retrievedAccount = true;
                                 break;
 
-                            // Two or more account names contain the keyword, display them and ask the user to choose one.
+                            // Two or more account names contain the keyword, ask the user to choose one.
                             default:
                                 try{
                                     // Printing the account names along with an index number.
                                     for(int index = 0 ; index < searchResults.size() ; index++){
                                         System.out.printf("[%d] %s \n", index, searchResults.get(index));
                                     }
-                                    // Asking the user to choose one of the displayed Accounts.
+
+                                    // Asking the user to choose one of the displayed accounts.
                                     int userChoice = readInt(
-                                                    "\nChoose an Account to view (enter the number inside [ ]): ");
+                                                    "\nChoose an Account to view (enter the number in [ ]): ");
 
                                     // Printing the credentials.
-                                    printCredentialsFor(searchResults.get(userChoice));
+                                    printCredentials(searchResults.get(userChoice));
                                     retrievedAccount = true;
                                 }
                                 // If the user enters an invalid choice.
