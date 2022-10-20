@@ -18,7 +18,7 @@ import static com.bix.utils.VaultController.*;
 /**
  * This class handles all the backend operations of Bix.
  */
-public final class Controller {
+public class Controller {
     // Manually set values.
     private static final String CONFIG_FILE = "config.properties";
     private static final String VAULT_FILE = "vault.db";
@@ -26,7 +26,7 @@ public final class Controller {
 
     // Class constants.
     private static Properties BIX_PROPERTIES = new Properties();
-    private static int AES_FLAVOR = AESFlavor.AES_128.toInteger();
+    private static AESFlavor AES_FLAVOR = null;
     private static char[] MASTER_PASSWORD = null;
     private static int CREDENTIAL_DISPLAY_DURATION;
     private static URI GITHUB_PAGE;
@@ -75,7 +75,7 @@ public final class Controller {
      *
      * @return true if the initial Bix setup is complete.
      */
-    public static boolean isBixSetupComplete() {
+    protected static boolean isBixSetupComplete() {
         try {
             return Boolean.parseBoolean(getStrMetadata("setup_complete"));
         }
@@ -87,11 +87,14 @@ public final class Controller {
     /**
      * Runs initial setup processes.
      */
-    public static void setup() {
+    protected static void setup() {
         boolean passwordSetupComplete = false;
 
         // Set up the vault.
         VaultController.setupVault();
+
+        // Set the AES flavor.
+        setAESFlavor();
 
         // Set the master password for Bix.
         while (!passwordSetupComplete) {
@@ -105,7 +108,7 @@ public final class Controller {
     /**
      * Reset Bix to its initial state.
      */
-    public static void resetBix() {
+    protected static void resetBix() {
         // Purge vault.
         purgeVault();
 
@@ -141,17 +144,50 @@ public final class Controller {
     }
 
     /**
-     * Set the AES flavor (128-bit, 192-bit or 256-bit).
-     * @param flavor The desired AES flavor to be set as the working flavor.
+     * Set up the AES flavor (128-bit, 192-bit or 256-bit).
      */
-    public static void setAESFlavor(AESFlavor flavor){
-        AES_FLAVOR = flavor.toInteger();
+    protected static void setAESFlavor() {
+        char userChoice;
+        do {
+            clearScreen();
+
+            System.out.println("""
+                    Pick an AES flavor. Bix will use this flavor of AES when encrypting credentials.
+                    
+                    AES-128 is the fastest.
+                    AES-256 provides the highest level of security. This is the default flavor.
+                    AES-192 is midway between AES-128 and AES-256 in terms of speed and security.
+                    
+                    Although AES-128 is technically considered "less secure" compared to the other flavors,
+                    it still provides a very high level of security.
+                    
+                    WARNING: You cannot change the AES flavor once it has been set.
+                    
+                    [1] AES-128
+                    [2] AES-192
+                    [3] AES-256 (default)
+                    """);
+
+            // Get the user's choice of AES flavor.
+            userChoice = readChar("> Choose an AES flavor: ");
+
+            switch (userChoice) {
+                case '1' -> AES_FLAVOR = AESFlavor.AES_128;
+                case '2' -> AES_FLAVOR = AESFlavor.AES_192;
+                default -> AES_FLAVOR = AESFlavor.AES_256;
+            }
+
+            // Get confirmation for chosen AES flavor.
+            System.out.println("\nWARNING: You cannot change the AES flavor once it has been set.");
+            userChoice = readChar(String.format("> Confirm your choice (AES-%d) [N/y]: ", AES_FLAVOR.toInteger()));
+
+        } while(!(Character.toUpperCase(userChoice) == 'Y'));
     }
 
     /**
      * Method to authenticate the user.
      */
-    public static boolean authenticateUser() {
+    protected static boolean authenticateUser() {
         // Get the Master Password hash.
         String masterPasswordHash = getStrMetadata("master_password_hash");
 
@@ -187,7 +223,7 @@ public final class Controller {
      * @param keyword find accounts containing this keyword
      * @return an {@code ArrayList<String>} containing all the Account names that contain the keyword
      */
-    public static ArrayList<String> getAccountNamesContaining(String keyword) {
+    protected static ArrayList<String> getAccountNamesContaining(String keyword) {
         return VaultController.getAccountNamesContaining(keyword);
     }
 
@@ -198,7 +234,7 @@ public final class Controller {
      * @param prompt Prompt to find account names containing a specific String.
      *               Prints all account names when set to {@code null}.
      */
-    public static void printAccountNames(String prompt) {
+    protected static void printAccountNames(String prompt) {
         // If prompt is null, print all account names.
         if (prompt==null) {
             try (BufferedReader br = new BufferedReader(new FileReader(VAULT_FILE))) {
@@ -213,13 +249,14 @@ public final class Controller {
             } // try
             catch (IOException e) { e.printStackTrace(); }
         }
-    } // printAccountNamesList()
+    }
 
 
-
-    /*-----------------------------------------------------------------------------------------*/
-
-    public static void printCredentials(String accountName){
+    /**
+     * Prints the username and password of an account
+     * @param accountName the account to print the credentials for
+     */
+    protected static void printCredentials(String accountName){
         /* Contents of the String[] returned by retrieveAccount():
          * +--------------+--------------+--------------+--------------+--------------+--------------+--------------+
          * | values[0]    | values[1]    | values[2]    | values[3]    | values[4]    | values[5]    | values[6]    |
@@ -248,13 +285,13 @@ public final class Controller {
         }
 
         // Authenticating the key generated with the master password and salt to the secretKeyHash.
-        if (!authenticateSecretKey(MASTER_PASSWORD, salt, AES_FLAVOR, secretKeyHash)) {
+        if (!authenticateSecretKey(MASTER_PASSWORD, salt, AES_FLAVOR.toInteger(), secretKeyHash)) {
             terminateSession(StatusCode.AUTHENTICATION_FAILED);
         }
 
         // Decrypting ciphertext.
-        char[] username = decrypt(MASTER_PASSWORD, ciphertextUsername, salt, iv, AES_FLAVOR);
-        char[] password = decrypt(MASTER_PASSWORD, ciphertextPassword, salt, iv, AES_FLAVOR);
+        char[] username = decrypt(MASTER_PASSWORD, ciphertextUsername, salt, iv, AES_FLAVOR.toInteger());
+        char[] password = decrypt(MASTER_PASSWORD, ciphertextPassword, salt, iv, AES_FLAVOR.toInteger());
 
         // Clear Screen and display account name.
         clearScreen();
@@ -343,7 +380,7 @@ public final class Controller {
     /**
      * Performs the shutdown procedure. Clears master password from memory and clears the terminal.
      */
-    public static void executeShutdownProcedure() {
+    protected static void executeShutdownProcedure() {
         // Clearing Master Password from memory.
         if (MASTER_PASSWORD != null) {
             // Setting every character in the char array to null character('\0') using Arrays.fill().
@@ -371,7 +408,7 @@ public final class Controller {
      * Terminates the current Bix session.
      * @param status The appropriate status code from enum {@code StatusCode}.
      */
-    public static void terminateSession(StatusCode status) {
+    protected static void terminateSession(StatusCode status) {
         // Clears screen and clear the master password from memory.
         executeShutdownProcedure();
 
@@ -380,11 +417,12 @@ public final class Controller {
         System.exit(status.getStatusCode());
     }
 
+
     // Utility Functions.
     /**
      * Clears the terminal.
      */
-    public static void clearScreen() {
+    protected static void clearScreen() {
         try {
             // For Windows systems.
             if (System.getProperty("os.name").contains("Windows"))
@@ -429,7 +467,7 @@ public final class Controller {
     /**
      * Opens the GitHub page for Bix in the default browser.
      */
-    public static void openGitHubPage() {
+    protected static void openGitHubPage() {
         try {
             Desktop desktop = Desktop.getDesktop();
 
