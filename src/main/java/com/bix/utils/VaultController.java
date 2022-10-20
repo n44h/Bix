@@ -189,6 +189,9 @@ final class VaultController {
         // Add the metadata fields with default values.
         addMetadata("setup_complete", "false");
         addMetadata("master_password_hash", "null");
+        addMetadata("aes_flavor", "null");
+        addMetadata("credential_display_duration", 30);
+        addMetadata("failed_login_attempts", 0);
     }
 
     /**
