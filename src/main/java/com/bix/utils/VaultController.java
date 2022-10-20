@@ -39,7 +39,7 @@ import java.util.Objects;
  * secret_hash is the SHA256 hash of the secret key (which is generated using thr master password and the salt)
  */
 
-class VaultController {
+final class VaultController {
     // Variable to indicate whether initial setup is required.
     private static final String VAULT_RESOURCE_PATH = "vault.db";
 
