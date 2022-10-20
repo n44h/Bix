@@ -1,6 +1,7 @@
 package com.bix.utils;
 
 import java.io.Console;
+import java.util.InputMismatchException;
 import java.util.Scanner;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -87,9 +88,17 @@ public final class Reader {
      * @return an int input
      */
     public static int readInt(String prompt) {
-        System.out.printf("\n%s", prompt);
-        startIdleSessionMonitor();
-        return SCANNER.nextInt();
+        // Loop to ensure user enters integer input.
+        do {
+            System.out.printf("\n%s", prompt);
+            startIdleSessionMonitor();
+            try {
+                return SCANNER.nextInt();
+            }
+            catch (InputMismatchException ime) {
+                System.out.println("\nError: Please provide an integer input.\n");
+            }
+        } while(true);
     }
 
     /**
