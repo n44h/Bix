@@ -8,6 +8,7 @@ import java.io.*;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.Properties;
 
 import static com.bix.utils.Crypto.*;
@@ -26,7 +27,7 @@ public class Controller {
 
     // Class constants.
     private static Properties BIX_PROPERTIES = new Properties();
-    private static AESFlavor AES_FLAVOR = null;
+    private static AESFlavor AES_FLAVOR;
     private static char[] MASTER_PASSWORD = null;
     private static int CREDENTIAL_DISPLAY_DURATION;
     private static URI GITHUB_PAGE;
@@ -109,6 +110,25 @@ public class Controller {
 
         // Once setup is completed successfully, update bix_metadata table.
         updateMetadata("setup_complete", "true");
+    }
+
+    /**
+     * Clears all stored accounts from the Bix vault.
+     */
+    protected static void purgeVault() {
+        // Get confirmation to purge vault.
+        String confirmChoice = readString("> Confirm purge vault [N/y]: ").toUpperCase(Locale.ROOT);
+        if (confirmChoice.equals("Y") || confirmChoice.equals("YES")) {
+            // Authenticate the user.
+            if (authenticateUser()) {
+                // Purge Vault.
+                VaultController.purgeVault();
+                System.out.println("\nPurged Bix vault. All stored account details have been cleared.");
+            }
+            else {
+                System.out.println("\nPurge Vault command aborted.");
+            }
+        }
     }
 
     /**
@@ -256,7 +276,6 @@ public class Controller {
         }
     }
 
-
     /**
      * Prints the username and password of an account
      * @param accountName the account to print the credentials for
@@ -382,6 +401,10 @@ public class Controller {
     }
 
 
+    // ------------------
+    // Utility Functions
+    // ------------------
+
     /**
      * Performs the shutdown procedure. Clears master password from memory and clears the terminal.
      */
@@ -422,8 +445,6 @@ public class Controller {
         System.exit(status.getStatusCode());
     }
 
-
-    // Utility Functions.
     /**
      * Clears the terminal.
      */
