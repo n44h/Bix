@@ -8,7 +8,6 @@ import java.io.*;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Locale;
 import java.util.Properties;
 
 import static com.bix.utils.Crypto.*;
@@ -22,7 +21,6 @@ import static com.bix.utils.VaultController.*;
 public class Controller {
     // Manually set values.
     private static final String CONFIG_FILE = "config.properties";
-    private static final String VAULT_FILE = "vault.db";
     private static final String GITHUB_URL = "https://github.com/CookieCrumbs19212/Bix";
 
     // Class constants.
@@ -117,8 +115,7 @@ public class Controller {
      */
     protected static void purgeVault() {
         // Get confirmation to purge vault.
-        String confirmChoice = readString("> Confirm purge vault [N/y]: ").toUpperCase(Locale.ROOT);
-        if (confirmChoice.equals("Y") || confirmChoice.equals("YES")) {
+        if (getConfirmation("> Confirm purge vault [N/y]: ", true)) {
             // Authenticate the user.
             if (authenticateUser()) {
                 // Purge Vault.
@@ -126,7 +123,7 @@ public class Controller {
                 System.out.println("\nPurged Bix vault. All stored account details have been cleared.");
             }
             else {
-                System.out.println("\nPurge Vault command aborted.");
+                System.out.println("\nVault purge operation aborted.");
             }
         }
     }
@@ -135,11 +132,22 @@ public class Controller {
      * Reset Bix to its initial state.
      */
     protected static void resetBix() {
-        // Purge vault.
-        purgeVault();
+        // Get confirmation to reset Bix.
+        if (getConfirmation("Confirm Bix reset [N/y]: ", true)) {
+            // Authenticate the user before resetting Bix.
+            if (authenticateUser()) {
+                // Purge vault.
+                VaultController.purgeVault();
 
-        // Clear Master Password.
-        clearCharArrayFromMemory(MASTER_PASSWORD);
+                // Clear Master Password.
+                clearCharArrayFromMemory(MASTER_PASSWORD);
+
+                System.out.println("\nBix reset complete.");
+            }
+            else {
+                System.out.println("\nBix reset command aborted.");
+            }
+        }
     }
 
     /**
@@ -203,11 +211,12 @@ public class Controller {
                 default -> AES_FLAVOR = AESFlavor.AES_256;
             }
 
-            // Get confirmation for chosen AES flavor.
-            System.out.println("\nWARNING: You cannot change the AES flavor once it has been set.");
-            userChoice = readChar(String.format("> Confirm your choice (AES-%d) [N/y]: ", AES_FLAVOR.toInteger()));
-
-        } while(!(Character.toUpperCase(userChoice) == 'Y'));
+        } while(!getConfirmation(
+                String.format("""
+                \nWARNING: You cannot change the AES flavor once it has been set.
+                > Confirm your choice (AES-%d) [N/y]:\040""", AES_FLAVOR.toInteger()
+                ), true)
+        );
 
         // Save the AES flavor to the metadata table.
         updateMetadata("aes_flavor", AES_FLAVOR.toString());
@@ -360,8 +369,10 @@ public class Controller {
         // Run loop to get the password.
         do {
             clearScreen();
-            System.out.print("NOTE: The password inputs will not be visible on the screen as you type.\n" +
-                             "      Your keyboard inputs will be directly registered by Bix.\n\n");
+            System.out.print("""
+                    NOTE: The password inputs will not be visible on the screen as you type.
+                          Your keyboard inputs will be directly registered by Bix.
+                    """);
 
             // Get Password first time.
             password1 = readPassword(String.format("> Enter %s password (1st time): ", accountName));
@@ -383,10 +394,11 @@ public class Controller {
         clearScreen();
 
         // Add associated email.
-        char userChoice = readChar("> Do you want to add an associated email for this account? [Y/n]: ");
-        if (Character.toUpperCase(userChoice) == 'Y') {
+        if (getConfirmation(
+                "> Do you want to add an associated email for this account? [Y/n]: ", false)) {
             clearScreen();
 
+            // Get email from user.
             email = readString(String.format("> Enter associated email for %s: ", accountName)).toCharArray();
             credentials.add(email);
         }
