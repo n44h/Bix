@@ -5,6 +5,7 @@ import java.util.InputMismatchException;
 import java.util.Scanner;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.Locale;
 
 import com.bix.enums.StatusCode;
 
@@ -110,6 +111,45 @@ public final class Reader {
         System.out.printf("\n%s", prompt);
         startIdleSessionMonitor();
         return CONSOLE.readPassword();
+    }
+
+    /**
+     * Gets confirmation from the user and returns a boolean.
+     * Yes -> true,
+     * No -> false
+     *
+     * @param prompt the confirmation prompt to give the user
+     * @param defaultNo indicates if the default response is No, i.e. {@code false}
+     *
+     * @return boolean value
+     */
+    public static boolean getConfirmation(String prompt, boolean defaultNo) {
+        do {
+            // Print prompt.
+            System.out.printf("\n%s", prompt);
+            startIdleSessionMonitor();
+
+            // Get confirmation from user
+            String confirmChoice = SCANNER.nextLine().trim().toUpperCase(Locale.ROOT);
+
+            switch (confirmChoice) {
+                case "Y":
+                case "YES":
+                    return true;
+
+                case "N":
+                case "NO":
+                    return false;
+
+                default:
+                    // If the user just hit the enter key, return the default response.
+                    if (confirmChoice.isEmpty())
+                        return !defaultNo;
+                    else
+                        System.out.println("\nInvalid response provided.");
+                    break;
+            }
+        } while(true);
     }
 
     /**
