@@ -479,7 +479,7 @@ public class Controller {
     /**
      * Clear character arrays from memory by setting its elements to null characters
      */
-    private static void clearCharArrayFromMemory(char[] char_array){
+    static void clearCharArrayFromMemory(char[] char_array){
         // Setting every character in the array to null character('\0') using Arrays.fill().
         Arrays.fill(char_array,'\0');
     }
