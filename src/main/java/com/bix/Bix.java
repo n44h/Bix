@@ -208,6 +208,7 @@ public final class Bix extends Controller {
 
                 // Add Account.
                 case "2":
+                    System.out.println();
                     break;
 
                 // Update Account.
@@ -265,19 +266,7 @@ public final class Bix extends Controller {
                                          This action is irreversible.
                                          """);
 
-                    // Get confirmation to reset Bix.
-                    confirmChoice = readString("Confirm Bix reset [N/y]: ").toLowerCase(Locale.ROOT);
-                    if (confirmChoice.equals("y") || confirmChoice.equals("yes")) {
-                        // Authenticate the user.
-                        if (authenticateUser()) {
-                            // Reset Bix.
-                            resetBix();
-                            System.out.println("\nBix reset complete.");
-                        }
-                        else {
-                            System.out.println("\nBix reset command aborted.");
-                        }
-                    }
+                    resetBix();
                     break;
 
                 // Show extended menu options.
@@ -301,11 +290,12 @@ public final class Bix extends Controller {
                     System.out.println("Invalid menu option entered. Try again.");
             } // switch
 
+            clearScreen();
+
         } while(!userMenuChoice.equals("X"));
 
         // Terminating the Bix session.
         terminateSession(StatusCode.SAFE_TERMINATION);
-
     }
 
     /**
