@@ -119,7 +119,9 @@ public final class Reader {
      * No -> false
      *
      * @param prompt the confirmation prompt to give the user
-     * @param defaultNo indicates if the default response is No, i.e. {@code false}
+     * @param defaultNo when true, the default response is No; when false, default response is Yes.
+     *                  Default responses are returned when the user just hits the return key without
+     *                  providing any textual input
      *
      * @return boolean value
      */
