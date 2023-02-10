@@ -1,15 +1,23 @@
 package com.bix;
 
+import java.awt.Desktop;
+import java.io.IOException;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Locale;
+import java.util.Properties;
 
 import com.bix.enums.StatusCode;
-import com.bix.utils.Controller;
 
 import static com.bix.utils.Reader.*;
+import static com.bix.Controller.*;
+import static com.bix.utils.Utils.clearScreen;
 
 
-public final class Bix extends Controller {
+public final class Bix {
+    // Config file name.
+    private static final String CONFIG_FILE = "config.properties";
+
     // Main menu options String.
     private static final String MAIN_MENU_OPTIONS = """
             Bix Main Menu:
@@ -65,35 +73,45 @@ public final class Bix extends Controller {
     private static final String HELP_STRING = """
             Bix Help
             
-            [0] Display Stored Accounts - Prints the names of all the stored accounts
+            - Account Actions:
             
-            [1] Retrieve Account - Retrieve a stored account's credentials
+            \t[0] Display Stored Accounts - Prints the names of all the stored accounts
             
-            [2] Add Account - Add a new account
+            \t[1] Retrieve Account - Retrieve a stored account's credentials
+            
+            \t[2] Add Account - Add a new account
 
-            [3] Update Account - Update an existing account's credentials
+            \t[3] Update Account - Update an existing account's credentials
             
-            [4] Delete Account - Delete a stored account
+            \t[4] Delete Account - Delete a stored account
             
             
-            [5] Reset Master Password - Reset the Bix master password
+            - Bix Settings:
+            
+            \t[5] Reset Master Password - Reset the Bix master password
                   
-            [6] Change Credential Display Duration - Change the duration the credentials are displayed on the screen
+            \t[6] Change Credential Display Duration - Change the duration the credentials are displayed on the screen
             
-            [7] Change Idle Timeout Duration - Change how long Bix can stay idle before terminating the session
-            
-            
-            [8] Import Vault - Import a Bix vault
-            
-            [9] Export Vault - Export the Bix vault
-            
-            [P] Purge Vault - Destroy the contents of the Bix vault. Use this option if you no longer intend to use Bix
+            \t[7] Change Idle Timeout Duration - Change how long Bix can stay idle before terminating the session
             
             
-            [R] Reset Bix - This action will purge the Bix vault and remove the master password.
+            - Vault Actions:
+            
+            \t[8] Import Vault - Import a Bix vault
+            
+            \t[9] Export Vault - Export the Bix vault
+            
+            \t[P] Purge Vault - Destroy the contents of the Bix vault. Use this option if you no longer intend to use Bix
             
             
-            [G] Open Bix GitHub Page - Open the GitHub page for Bix in the default browser
+            - Reset Bix:
+            
+            \t[R] Reset Bix - This action will purge the Bix vault and remove the master password.
+            
+            
+            - GitHub Page:
+            
+            \t[G] Open Bix GitHub Page - Open the GitHub page for Bix in the default browser
             
             """;
 
@@ -104,7 +122,7 @@ public final class Bix extends Controller {
         // Adding a JVM shutdown hook. This thread will be executed when the JVM is shutting down.
         // This Shutdown Hook is for clearing the Master Password from memory when the session is terminated.
         // Carrying out shutdown procedure: clears sensitive information from the terminal and memory.
-        Runtime.getRuntime().addShutdownHook(new Thread(Controller::executeShutdownProcedure));
+        Runtime.getRuntime().addShutdownHook(new Thread(Controller::incinerate));
 
         // Perform Bix setup if this is the first time running Bix.
         if (!isBixSetupComplete()) {
@@ -115,14 +133,14 @@ public final class Bix extends Controller {
         clearScreen();
         System.out.printf("""
                            Hello, %s!
-                           This is Bix, your Password Manager.
+                           This is Bix, your Account Manager.
                            """, getUsernameFromSystem());
 
         // Authenticate User.
         authenticateUser();
 
         // Bix Menu loop.
-        String userMenuChoice, confirmChoice;
+        String userMenuChoice;
 
         do {
             if (printMainMenu)
@@ -152,7 +170,7 @@ public final class Bix extends Controller {
                     System.out.println("\nRetrieve Account");
 
                     // Boolean to indicate if the account has been found.
-                    boolean retrievedAccount = false;
+                    var foundAccount = false;
 
                     // ArrayList that stores all the accounts that contain the keyword entered by the user.
                     ArrayList<String> searchResults;
@@ -168,42 +186,42 @@ public final class Bix extends Controller {
                         // Finding all account names containing the keyword.
                         searchResults = getAccountNamesContaining(keyword);
 
-                        switch(searchResults.size()) {
+                        switch (searchResults.size()) {
                             // No account name contains the keyword.
-                            case 0:
-                                System.out.printf("\nBix could not find an Account Name containing \"%s\".\n", keyword);
-                                break;
+                            case 0 ->
+                                    System.out.printf(
+                                            "\nBix could not find an Account Name containing \"%s\".\n", keyword);
 
                             // Only one account name contains the keyword, retrieve the information for that account.
-                            case 1:
+                            case 1 -> {
                                 printCredentials(searchResults.get(0));
-                                retrievedAccount = true;
-                                break;
+                                foundAccount = true;
+                            }
 
                             // Two or more account names contain the keyword, ask the user to choose one.
-                            default:
-                                try{
+                            default -> {
+                                try {
                                     // Printing the account names along with an index number.
-                                    for(int index = 0 ; index < searchResults.size() ; index++){
+                                    for (var index = 0; index < searchResults.size(); index++) {
                                         System.out.printf("[%d] %s \n", index, searchResults.get(index));
                                     }
 
                                     // Asking the user to choose one of the displayed accounts.
-                                    int userChoice = readInt(
-                                                    "\nChoose an Account to view (enter the number in [ ]): ");
+                                    var userChoice = readInt(
+                                            "\nChoose an Account to view (enter the number in [ ]): ");
 
                                     // Printing the credentials.
                                     printCredentials(searchResults.get(userChoice));
-                                    retrievedAccount = true;
+                                    foundAccount = true;
                                 }
                                 // If the user enters an invalid choice.
-                                catch(Exception e){
+                                catch (Exception e) {
                                     clearScreen();
                                     System.out.println("The option you entered is invalid. Try again.");
                                 }
-                                break;
+                            }
                         } // switch
-                    } while (!retrievedAccount);
+                    } while (!foundAccount);
                     break;
 
                 // Add Account.
@@ -311,8 +329,42 @@ public final class Bix extends Controller {
                 username = System.getenv("USER");
 
             // Capitalizing the first letter of the username and returning.
-            return Character.toUpperCase(username.charAt(0)) + username.substring(1);
-        } catch (Exception e) { return "User"; }
+            return Character.toUpperCase(username.charAt(0)) +
+                    (username.length() > 1 ? username.substring(1) : "");
+        } catch (Exception e) { return "User"; } // return "User" if username could not be retrieved.
+    }
+
+    /**
+     * Opens the GitHub page for Bix in the default browser.
+     */
+    private static void openGitHubPage() {
+        // Create an input stream from config file (config file is in the resource folder).
+        var configFile = Bix.class.getClassLoader().getResourceAsStream(CONFIG_FILE);
+
+        try {
+            // Loading the properties from the config.properties file.
+            var bix_properties = new Properties();
+            bix_properties.load(configFile);
+
+            // Get the URL for the Bix GitHub page.
+            var github_page = new URI(bix_properties.getProperty("github_url"));
+
+            // Open the URL.
+            var desktop = Desktop.getDesktop();
+            desktop.browse(github_page);
+        }
+        catch (IOException ioe) {
+            ioe.printStackTrace();
+            terminateSession(StatusCode.ERROR_ACCESSING_CONFIG_FILE);
+        }
+        catch (NullPointerException ne) {
+            ne.printStackTrace();
+            terminateSession(StatusCode.CONFIG_FILE_NOT_FOUND);
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+            terminateSession(StatusCode.UNKNOWN_RESOURCE_ERROR);
+        }
     }
 
 } // class Bix
