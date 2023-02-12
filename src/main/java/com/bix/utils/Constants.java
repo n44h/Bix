@@ -14,6 +14,9 @@ public class Constants {
     // URL to Bix GitHub page.
     public static final String BIX_GITHUB_URL = "https://github.com/CookieCrumbs19212/Bix";
 
+    // Number of failed login attempts before vault is purged.
+    public static final int FAILED_LOGIN_ATTEMPT_LIMIT = 3;
+
     // Main menu options String.
     public static final String MAIN_MENU_OPTIONS = """
             Bix Main Menu:
@@ -126,6 +129,17 @@ public class Constants {
             [1] AES-128
             [2] AES-192
             [3] AES-256 (default)
+            """;
+
+    public static final String RESET_BIX_WARNING_MSG = """
+            WARNING: All the saved accounts from the Bix vault will be permanently deleted.
+                     The Bix master password will be removed.
+                     This action is irreversible. Please be sure before proceeding.
+            """;
+
+    public static final String PURGE_VAULT_WARNING_MSG = """
+            WARNING: All the saved accounts from the Bix vault will be permanently deleted.
+                     This action is irreversible. Please be sure before proceeding.
             """;
 
 } // class Constants
