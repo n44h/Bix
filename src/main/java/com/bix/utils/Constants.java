@@ -110,4 +110,22 @@ public class Constants {
             \t[G] Open Bix GitHub Page - Open the GitHub page for Bix in the default browser
             
             """;
-}
+
+    public static final String AES_FLAVOR_HELP_STRING = """
+            Pick an AES flavor. Bix will use this flavor of AES when encrypting credentials.
+            
+            AES-128 is the fastest.
+            AES-256 provides the highest level of security. This is the default flavor.
+            AES-192 is midway between AES-128 and AES-256 in terms of speed and security.
+            
+            Although AES-128 is technically considered "less secure" compared to the other flavors,
+            it still provides a very high level of security.
+            
+            WARNING: You cannot change the AES flavor once it has been set.
+            
+            [1] AES-128
+            [2] AES-192
+            [3] AES-256 (default)
+            """;
+
+} // class Constants
