@@ -30,15 +30,20 @@ import static com.bix.utils.Constants.CIPHER_ALGORITHM;
  */
 
 public final class Crypto {
-    private Crypto(){} // Enforce non-instantiability of this class.
+    // SecureRandom object for salt and Initialization Vector (IV) generation.
+    private final SecureRandom RANDOM;
+    private final int AES_FLAVOR;
 
-    static {
+    public Crypto(int aesFlavor) {
         // Add the Bouncy Castle provider.
         Security.addProvider(new BouncyCastleProvider());
-    }
 
-    // SecureRandom object for SALT and Initialization Vector (IV) generation.
-    private static final SecureRandom RANDOM = new SecureRandom();
+        // Create new SecureRandom instance, constructs a secure Random Number Generator.
+        RANDOM = new SecureRandom();
+
+        // Set the AES Flavor.
+        AES_FLAVOR = aesFlavor;
+    }
 
 
     // SHA256 Hashing
@@ -49,7 +54,7 @@ public final class Crypto {
      *
      * @return SHA256 hash as a hexadecimal String
      */
-    public static String getSHA256Hash(char[] input) {
+    public String getSHA256Hash(char[] input) {
         // Generating MessageDigest object initialized with the SHA-256 algorithm.
         MessageDigest md;
         try {
@@ -74,7 +79,7 @@ public final class Crypto {
      *
      * @return the SHA256 hash of the secret key as a hexadecimal String
      */
-    public static String getKeyHash(SecretKey secretKey) {
+    public String getKeyHash(SecretKey secretKey) {
         // Convert SecretKey object to byte array.
         byte[] byteArray = secretKey.getEncoded();
 
@@ -87,13 +92,12 @@ public final class Crypto {
      *
      * @param masterPassword the master password
      * @param salt the salt as a String
-     * @param algorithm AES flavor: 128, 192, or 256
      *
      * @return true if the hash of the generated secret key matches the target hash
      */
-    public static boolean authenticateSecretKey(char[] masterPassword, String salt, int algorithm, String targetHash) {
+    public boolean authenticateSecretKey(char[] masterPassword, String salt, String targetHash) {
         // Generate the secret key.
-        SecretKey secretKey = getSecretKey(masterPassword, decode(salt), algorithm);
+        SecretKey secretKey = getSecretKey(masterPassword, decode(salt));
 
         // Return true iff secret key is not null, and it is equal to the target hash.
         return secretKey != null && getKeyHash(secretKey).equals(targetHash);
@@ -107,11 +111,10 @@ public final class Crypto {
      * @param plaintext the String to be encrypted
      * @param password the password, along with a randomly generated salt, will be used to generate the secret key
      *                 for encrypting the plaintext
-     * @param algorithm AES flavor: 128, 192, or 256
      *
      * @return a String[] containing [CIPHERTEXT (base64), SALT (base64), IV (base64), SECRET_KEY_HASH]
      */
-    public static String[] encrypt(char[] plaintext, char[] password, int algorithm) {
+    public String[] encrypt(char[] plaintext, char[] password) {
         try{
             // Generate random salt.
             var salt = generateRandomSalt();
@@ -120,7 +123,7 @@ public final class Crypto {
             var iv = generateRandomIV();
 
             // Generate secret key.
-            var secretKey = getSecretKey(password, salt, algorithm);
+            var secretKey = getSecretKey(password, salt);
 
             // Initializing cipher for AES in CBC mode using PKCS5 padding.
             var cipher = Cipher.getInstance(CIPHER_ALGORITHM, "BC");
@@ -154,14 +157,13 @@ public final class Crypto {
      * @param password the master password
      * @param salt salt used during encryption
      * @param iv initialization vector used during encryption
-     * @param algorithm AES flavor: 128, 192 or 256.
      *
      * @return the decrypted plaintext as a String
      */
-    public static char[] decrypt(char[] password, String ciphertext, String salt, String iv, int algorithm) {
+    public char[] decrypt(char[] password, String ciphertext, String salt, String iv) {
 
         // Generate secret key object.
-        var secretKey = getSecretKey(password, decode(salt), algorithm);
+        var secretKey = getSecretKey(password, decode(salt));
 
         // Initialize IvParameterSpec object.
         var ivSpec = new IvParameterSpec(decode(iv));
@@ -192,7 +194,7 @@ public final class Crypto {
      *
      * @return a byte array of size 16
      */
-    private static byte[] generateRandomSalt() {
+    private byte[] generateRandomSalt() {
         byte[] salt = new byte[16];
         RANDOM.nextBytes(salt);
         return salt;
@@ -203,7 +205,7 @@ public final class Crypto {
      *
      * @return an {@code IvParameterSpec} object
      */
-    private static IvParameterSpec generateRandomIV() {
+    private IvParameterSpec generateRandomIV() {
         byte[] iv = new byte[16];
         RANDOM.nextBytes(iv);
         return new IvParameterSpec(iv);
@@ -214,18 +216,17 @@ public final class Crypto {
      *
      * @param password the master password
      * @param salt randomly generated salt
-     * @param algorithm AES flavor: 128, 192, or 256
      *
      * @return {@code SecretKey} object
      */
-    private static SecretKey getSecretKey(char[] password, byte[] salt, int algorithm) {
+    private SecretKey getSecretKey(char[] password, byte[] salt) {
         SecretKey secretKey;
         try {
             // Create an instance of SecretKeyFactory with Password-Based Key Derivation Function 2 (PBKDF2).
             SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256", "BC");
 
             // Create a Key Specifications object.
-            KeySpec spec = new PBEKeySpec(password, salt, 65536, algorithm);
+            KeySpec spec = new PBEKeySpec(password, salt, 65536, AES_FLAVOR);
 
             // Generate the secret key
             secretKey = new SecretKeySpec(factory.generateSecret(spec).getEncoded(), "AES");
