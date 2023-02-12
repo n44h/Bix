@@ -2,13 +2,14 @@ plugins {
     id 'java'
 }
 
-// Indicating to gradle which java file is the main file, this is necessary for jar file creation.
+// Indicating to Gradle which java file is the main file, this is necessary for jar file creation.
 jar {
     manifest {
         attributes 'Main-Class': 'com.bix.Bix'
     }
 }
 
+// Telling Gradle to install dependencies from the Maven repository.
 repositories {
     mavenCentral()
 }
@@ -19,6 +20,15 @@ dependencies {
 
     // https://mvnrepository.com/artifact/org.bouncycastle/bcprov-jdk15on
     implementation group: 'org.bouncycastle', name: 'bcprov-jdk15on', version: '1.70'
+
+    // https://mvnrepository.com/artifact/ch.qos.logback/logback-core
+    implementation group: 'ch.qos.logback', name: 'logback-core', version: '1.4.5'
+
+    // https://mvnrepository.com/artifact/ch.qos.logback/logback-classic
+    implementation group: 'ch.qos.logback', name: 'logback-classic', version: '1.4.5'
+
+    // https://mvnrepository.com/artifact/org.slf4j/slf4j-api
+    implementation group: 'org.slf4j', name: 'slf4j-api', version: '2.0.6'
 
     // JUnit5 for unit testing.
     testImplementation 'org.junit.jupiter:junit-jupiter:5.8.1'
