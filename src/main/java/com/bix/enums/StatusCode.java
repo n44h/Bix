@@ -8,37 +8,38 @@ package com.bix.enums;
 public enum StatusCode {
 
     // Safe Termination.
-    SAFE_TERMINATION(0, "Safe Termination."),
+    SAFE_TERMINATION(0, "Safe Termination.", "info"),
 
     // Resource Not Found.
-    CONFIG_FILE_NOT_FOUND(1, "The config.properties file could not be found."),
-    VAULT_FILE_NOT_FOUND(2, "The vault.db file could not be found."),
-    CONSOLE_NOT_FOUND(3, "Unable to find a system console associated with the current JVM."),
+    CONFIG_FILE_NOT_FOUND(1, "The config.properties file could not be found.", "error"),
+    VAULT_FILE_NOT_FOUND(2, "The vault.db file could not be found.", "error"),
+    CONSOLE_NOT_FOUND(3, "Unable to find a system console associated with the current JVM.", "error"),
 
-    // Resource Access Error.
-    ERROR_ACCESSING_CONFIG_FILE(4, "An error occurred while accessing the config.properties file."),
-    ERROR_ACCESSING_VAULT_FILE(5, "An error occurred while accessing the vault.db file."),
+    // Opening GitHub Page Error.
+    ERROR_OPENING_GITHUB_PAGE(4, "An error occurred while accessing the config.properties file.", "warn"),
+    INVALID_GITHUB_URL_SYNTAX(5, "An error occurred while accessing the vault.db file.", "warn"),
 
     // Setup Failure.
-    MASTER_PASSWORD_SETUP_FAILED(6, "Master Password setup failed."),
+    MASTER_PASSWORD_SETUP_FAILED(6, "Master Password setup failed.", "error"),
 
     // Authentication Failure.
-    AUTHENTICATION_FAILED(7, "User Authentication Failed."),
+    AUTHENTICATION_FAILED(7, "User Authentication Failed.", "error"),
 
     // Idle Session Timeout.
-    IDLE_SESSION_TIMEOUT(8, "Bix session terminated due to inactivity."),
+    IDLE_SESSION_TIMEOUT(8, "Bix session terminated due to inactivity.", "warn"),
 
     // Unknown Errors.
-    UNKNOWN_RESOURCE_ERROR(126, "An unknown file/resource error has occurred."),
-    UNKNOWN_ERROR(127, "An unknown error occurred.");
+    UNKNOWN_ERROR(127, "An unknown error occurred.", "error");
     //--------------------------------------------------------------------------------------------
 
     public final int code;
     public final String message;
+    public final String logLevel;
 
-    StatusCode(final int code, final String message) {
+    StatusCode(final int code, final String message, final String logLevel) {
         this.code = code;
         this.message = message;
+        this.logLevel = logLevel;
     }
 
 } // enum StatusCode
