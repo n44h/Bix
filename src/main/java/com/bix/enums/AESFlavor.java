@@ -1,5 +1,7 @@
 package com.bix.enums;
 
+import org.jetbrains.annotations.NotNull;
+
 public enum AESFlavor {
     AES_128(128, "AES-128"),
     AES_192(192, "AES-192"),
@@ -17,11 +19,13 @@ public enum AESFlavor {
         return intValue;
     }
 
+    @Override @NotNull
     public String toString() {
         return strValue;
     }
 
-    public static AESFlavor fromString(String value) {
+    @NotNull
+    public static AESFlavor fromString(@NotNull String value) {
         switch(value) {
             case "AES-128" -> {
                 return AES_128;
