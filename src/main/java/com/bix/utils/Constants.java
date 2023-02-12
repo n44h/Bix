@@ -3,6 +3,8 @@ package com.bix.utils;
 public class Constants {
     private Constants() {} // Enforce non-instantiability for this class.
 
+    public static final String CIPHER_ALGORITHM = "AES/CBC/PKCS5PADDING";
+
     // Resource path to config file.
     public static final String CONFIG_FILE_RESOURCE_PATH = "config.properties";
 
