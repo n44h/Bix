@@ -3,118 +3,23 @@ package com.bix;
 import java.awt.Desktop;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Locale;
-import java.util.Properties;
 
 import com.bix.enums.StatusCode;
 
-import static com.bix.utils.Reader.*;
 import static com.bix.Controller.*;
+import static com.bix.utils.Reader.*;
 import static com.bix.utils.Utils.clearScreen;
+
+import static com.bix.utils.Constants.MAIN_MENU_OPTIONS;
+import static com.bix.utils.Constants.EXT_MENU_OPTIONS;
+import static com.bix.utils.Constants.HELP_STRING;
+import static com.bix.utils.Constants.BIX_GITHUB_URL;
 
 
 public final class Bix {
-    // Config file name.
-    private static final String CONFIG_FILE = "config.properties";
-
-    // Main menu options String.
-    private static final String MAIN_MENU_OPTIONS = """
-            Bix Main Menu:
-            
-            \t[0] Display Stored Accounts
-
-            \t[1] Retrieve Account
-
-            \t[2] Add Account
-
-            \t[3] Update Account
-            
-            \t[4] Delete Account
-
-            \t[M] More Options
-            
-            \t[H] Help
-
-            \t[X] Exit Bix
-            
-            """;
-
-    // Extended menu options String.
-    private static final String EXT_MENU_OPTIONS = """
-            Bix Extended Menu:
-            
-            \t[5] Reset Master Password
-            
-            \t[6] Change Credential Display Duration
-            
-            \t[7] Change Idle Timeout Duration
-            
-            \t[8] Import Vault
-            
-            \t[9] Export Vault
-            
-            \t[G] Open Bix GitHub Page
-            
-            +---------------------+
-            |   DANGER ZONE:      |
-            |---------------------|
-            |   [P] Purge Vault   |
-            |                     |
-            |   [R] Reset Bix     |
-            +---------------------+
-            
-            \t[B] Back to Main Menu
-            
-            \t[X] Exit Bix
-            
-            """;
-
-    private static final String HELP_STRING = """
-            Bix Help
-            
-            - Account Actions:
-            
-            \t[0] Display Stored Accounts - Prints the names of all the stored accounts
-            
-            \t[1] Retrieve Account - Retrieve a stored account's credentials
-            
-            \t[2] Add Account - Add a new account
-
-            \t[3] Update Account - Update an existing account's credentials
-            
-            \t[4] Delete Account - Delete a stored account
-            
-            
-            - Bix Settings:
-            
-            \t[5] Reset Master Password - Reset the Bix master password
-                  
-            \t[6] Change Credential Display Duration - Change the duration the credentials are displayed on the screen
-            
-            \t[7] Change Idle Timeout Duration - Change how long Bix can stay idle before terminating the session
-            
-            
-            - Vault Actions:
-            
-            \t[8] Import Vault - Import a Bix vault
-            
-            \t[9] Export Vault - Export the Bix vault
-            
-            \t[P] Purge Vault - Destroy the contents of the Bix vault. Use this option if you no longer intend to use Bix
-            
-            
-            - Reset Bix:
-            
-            \t[R] Reset Bix - This action will purge the Bix vault and remove the master password.
-            
-            
-            - GitHub Page:
-            
-            \t[G] Open Bix GitHub Page - Open the GitHub page for Bix in the default browser
-            
-            """;
-
     // Variable to indicate whether to print the main menu or extended menu.
     private static boolean printMainMenu = true;
 
@@ -338,32 +243,19 @@ public final class Bix {
      * Opens the GitHub page for Bix in the default browser.
      */
     private static void openGitHubPage() {
-        // Create an input stream from config file (config file is in the resource folder).
-        var configFile = Bix.class.getClassLoader().getResourceAsStream(CONFIG_FILE);
-
         try {
-            // Loading the properties from the config.properties file.
-            var bix_properties = new Properties();
-            bix_properties.load(configFile);
-
             // Get the URL for the Bix GitHub page.
-            var github_page = new URI(bix_properties.getProperty("github_url"));
+            var github_page = new URI(BIX_GITHUB_URL);
 
             // Open the URL.
             var desktop = Desktop.getDesktop();
             desktop.browse(github_page);
         }
         catch (IOException ioe) {
-            ioe.printStackTrace();
-            terminateSession(StatusCode.ERROR_ACCESSING_CONFIG_FILE);
+            terminateSession(StatusCode.UNKNOWN_ERROR);
         }
-        catch (NullPointerException ne) {
-            ne.printStackTrace();
-            terminateSession(StatusCode.CONFIG_FILE_NOT_FOUND);
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-            terminateSession(StatusCode.UNKNOWN_RESOURCE_ERROR);
+        catch (URISyntaxException ue) {
+            terminateSession(StatusCode.INVALID_GITHUB_URL_SYNTAX);
         }
     }
 
