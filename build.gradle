@@ -30,6 +30,9 @@ dependencies {
     // https://mvnrepository.com/artifact/org.slf4j/slf4j-api
     implementation group: 'org.slf4j', name: 'slf4j-api', version: '2.0.6'
 
+    // JetBrains annotations library.
+    implementation 'org.jetbrains:annotations:23.0.0'
+
     // JUnit5 for unit testing.
     testImplementation 'org.junit.jupiter:junit-jupiter:5.8.1'
 }
