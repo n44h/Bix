@@ -9,6 +9,8 @@ import java.util.Locale;
 
 import com.bix.enums.StatusCode;
 
+import static com.bix.Controller.terminateSession;
+
 /**
  * <p>
  * Class to monitor the Bix session for idle sessions (i.e. the user is inactive).
@@ -24,16 +26,19 @@ import com.bix.enums.StatusCode;
  */
 
 public final class Reader {
+    private Reader(){} // Enforce non-instantiability of this class.
+
     private static final Scanner SCANNER = new Scanner(System.in);
     private static final Console CONSOLE = System.console();
 
-    // IDLE_TIMEOUT dictates how long a session can be idle in seconds
+    // IDLE_TIMEOUT dictates how long a session can be idle in seconds before it is terminated.
     private static int IDLE_TIMEOUT;
 
     /* Timer object starts a background thread.
      * TimerTask is a task that can be scheduled and linked to the Timer object.
-     * Our goal for this class is to terminate the current Bix session if the
-     * session has been idle for a certain period of time (determined by idle_timeout).
+     *
+     * The purpose of this class is to terminate the current Bix session if the
+     * session has been idle for a certain period of time (determined by IDLE_TIMEOUT).
      *
      * The task in our case is terminating the current Bix session.
      * And so, the TimerTask object calls the Controller.terminateSession().
@@ -43,7 +48,7 @@ public final class Reader {
         @Override
         public void run() {
             SCANNER.close();
-            Controller.terminateSession(StatusCode.IDLE_SESSION_TIMEOUT);
+            terminateSession(StatusCode.IDLE_SESSION_TIMEOUT);
         }
     };
 
@@ -53,12 +58,16 @@ public final class Reader {
      * New timeout can also not be less than 30 seconds.
      *
      * @param newTimeout new idle session timeout in seconds
+     *
+     * @return the new timeout value
      */
-    public static void setIdleTimeout(int newTimeout) {
+    public static int setIdleTimeout(int newTimeout) {
         if(newTimeout < 30)
             IDLE_TIMEOUT = 30;
         else
             IDLE_TIMEOUT = Math.min(newTimeout, 20 * 60);
+
+        return IDLE_TIMEOUT;
     }
 
     /**
@@ -132,24 +141,22 @@ public final class Reader {
             startIdleSessionMonitor();
 
             // Get confirmation from user
-            String confirmChoice = SCANNER.nextLine().trim().toUpperCase(Locale.ROOT);
+            var confirmChoice = SCANNER.nextLine().trim().toUpperCase(Locale.ROOT);
 
             switch (confirmChoice) {
-                case "Y":
-                case "YES":
+                case "Y", "YES" -> {
                     return true;
-
-                case "N":
-                case "NO":
+                }
+                case "N", "NO" -> {
                     return false;
-
-                default:
+                }
+                default -> {
                     // If the user just hit the enter key, return the default response.
                     if (confirmChoice.isEmpty())
                         return !defaultNo;
                     else
                         System.out.println("\nInvalid response provided.");
-                    break;
+                }
             }
         } while(true);
     }
