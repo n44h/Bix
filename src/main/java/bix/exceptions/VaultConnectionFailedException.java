@@ -1,4 +1,4 @@
-package com.bix.exceptions;
+package bix.exceptions;
 
 public class VaultConnectionFailedException extends Exception {
     public VaultConnectionFailedException() {

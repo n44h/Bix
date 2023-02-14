@@ -1,4 +1,4 @@
-package com.bix.utils;
+package bix.utils;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
@@ -21,7 +21,7 @@ import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
 // Get the cipher algorithm which contains the encryption system, encryption mode, and padding mode.
-import static com.bix.utils.Constants.CIPHER_ALGORITHM;
+import static bix.utils.Constants.CIPHER_ALGORITHM;
 
 /**
  * This class serves 2 functions:

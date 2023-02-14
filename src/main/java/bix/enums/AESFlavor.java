@@ -1,4 +1,4 @@
-package com.bix.enums;
+package bix.enums;
 
 import org.jetbrains.annotations.NotNull;
 

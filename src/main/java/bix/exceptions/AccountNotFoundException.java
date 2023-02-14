@@ -1,4 +1,4 @@
-package com.bix.exceptions;
+package bix.exceptions;
 
 public class AccountNotFoundException extends Exception {
     public AccountNotFoundException(String accountName) {

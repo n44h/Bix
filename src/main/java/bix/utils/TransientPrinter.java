@@ -1,11 +1,11 @@
-package com.bix.utils;
+package bix.utils;
 
 import java.util.Scanner;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.Arrays;
 
-import static com.bix.utils.Utils.clearScreen;
+import static bix.utils.Utils.clearScreen;
 
 public class TransientPrinter {
     private static final Scanner SCANNER = new Scanner(System.in);

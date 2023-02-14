@@ -1,4 +1,4 @@
-package com.bix.utils;
+package bix.utils;
 
 import java.util.Arrays;
 

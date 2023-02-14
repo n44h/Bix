@@ -1,4 +1,4 @@
-package com.bix.exceptions;
+package bix.exceptions;
 
 public class AccountAlreadyExistsException extends Exception {
     public AccountAlreadyExistsException(String accountName) {

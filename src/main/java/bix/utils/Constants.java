@@ -1,4 +1,4 @@
-package com.bix.utils;
+package bix.utils;
 
 public class Constants {
     private Constants() {} // Enforce non-instantiability for this class.

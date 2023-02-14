@@ -1,4 +1,4 @@
-package com.bix.utils;
+package bix.utils;
 
 import java.io.Console;
 import java.util.InputMismatchException;
@@ -7,9 +7,9 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.Locale;
 
-import com.bix.enums.StatusCode;
+import bix.enums.StatusCode;
 
-import static com.bix.Controller.terminateSession;
+import static bix.Controller.terminateSession;
 
 /**
  * <p>

@@ -1,4 +1,4 @@
-package com.bix.enums;
+package bix.enums;
 
 /**
  * Enum to represent the status of Bix.
