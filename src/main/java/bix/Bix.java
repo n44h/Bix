@@ -1,4 +1,4 @@
-package com.bix;
+package bix;
 
 import java.awt.Desktop;
 import java.io.IOException;
@@ -7,16 +7,16 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Locale;
 
-import com.bix.enums.StatusCode;
+import bix.enums.StatusCode;
 
-import static com.bix.Controller.*;
-import static com.bix.utils.Reader.*;
-import static com.bix.utils.Utils.clearScreen;
+import static bix.Controller.*;
+import static bix.utils.Reader.*;
+import static bix.utils.Utils.clearScreen;
 
-import static com.bix.utils.Constants.MAIN_MENU_OPTIONS;
-import static com.bix.utils.Constants.EXT_MENU_OPTIONS;
-import static com.bix.utils.Constants.HELP_STRING;
-import static com.bix.utils.Constants.BIX_GITHUB_URL;
+import static bix.utils.Constants.MAIN_MENU_OPTIONS;
+import static bix.utils.Constants.EXT_MENU_OPTIONS;
+import static bix.utils.Constants.HELP_STRING;
+import static bix.utils.Constants.BIX_GITHUB_URL;
 
 
 public final class Bix {
@@ -29,10 +29,8 @@ public final class Bix {
         // Carrying out shutdown procedure: clears sensitive information from the terminal and memory.
         Runtime.getRuntime().addShutdownHook(new Thread(Controller::incinerate));
 
-        // Perform Bix setup if this is the first time running Bix.
-        if (!isBixSetupComplete()) {
-            setup();
-        }
+        // Set up Bix: loads variables, and initializes
+        setup();
 
         // Greet user.
         clearScreen();
@@ -46,18 +44,14 @@ public final class Bix {
 
         // Bix Menu loop.
         String userMenuChoice;
-
         do {
-            if (printMainMenu)
-                // Printing main menu options.
-                System.out.print(MAIN_MENU_OPTIONS);
-            else {
-                // Printing extended menu options.
-                System.out.print(EXT_MENU_OPTIONS);
-            }
+            // Print menu options.
+            System.out.print(printMainMenu ? MAIN_MENU_OPTIONS : EXT_MENU_OPTIONS);
 
             // Reading user's menu choice.
             userMenuChoice = readString("> Enter Menu option: ").toUpperCase(Locale.ROOT);
+
+            clearScreen();
 
             // Evaluating based on the menu option entered by the user.
             switch (userMenuChoice) {
@@ -83,8 +77,6 @@ public final class Bix {
                     // Loop will keep running till an account is found.
                     String keyword;
                     do{
-                        clearScreen();
-
                         // Get keyword from user.
                         keyword = readString("> Enter Account Name: ").toUpperCase(Locale.ROOT);
 
@@ -113,7 +105,7 @@ public final class Bix {
 
                                     // Asking the user to choose one of the displayed accounts.
                                     var userChoice = readInt(
-                                            "\nChoose an Account to view (enter the number in [ ]): ");
+                                            "Choose an Account to view (enter the number in [ ]): ");
 
                                     // Printing the credentials.
                                     printCredentials(searchResults.get(userChoice));
@@ -123,15 +115,17 @@ public final class Bix {
                                 catch (Exception e) {
                                     clearScreen();
                                     System.out.println("The option you entered is invalid. Try again.");
-                                }
-                            }
+                                } // try catch
+
+                            } // default
+
                         } // switch
+
                     } while (!foundAccount);
                     break;
 
                 // Add Account.
                 case "2":
-                    System.out.println();
                     break;
 
                 // Update Account.
@@ -152,6 +146,10 @@ public final class Bix {
 
                 // Change Idle Session Timeout.
                 case "7":
+                    // Get new idle session timeout duration from user.
+                    var newTimeout = readInt("Enter new idle session timeout duration in seconds: ");
+                    newTimeout = setIdleTimeout(newTimeout);
+                    System.out.println("");
                     break;
 
                 // Import Vault.
@@ -171,25 +169,14 @@ public final class Bix {
                     terminateSession(StatusCode.SAFE_TERMINATION);
                     break;
 
+                // Purge vault.
                 case "P":
-                    System.out.println("""
-                                WARNING: All the saved accounts from the Bix vault will be permanently deleted.
-                                         This action is irreversible.
-                                         """);
-
-                    // Call Controller.purgeVault().
-                    purgeVault();
+                    purgeVault(); // Controller.purgeVault()
                     break;
 
-                // Reset Bix to initial state.
+                // Reset Bix to factory state.
                 case "R":
-                    System.out.println("""
-                                WARNING: All the saved accounts from the Bix vault will be permanently deleted.
-                                         The Bix master password will be removed.
-                                         This action is irreversible.
-                                         """);
-
-                    resetBix();
+                    resetBix(); // Controller.resetBix()
                     break;
 
                 // Show extended menu options.
