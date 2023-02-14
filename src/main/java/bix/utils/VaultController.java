@@ -1,6 +1,6 @@
-package com.bix.utils;
+package bix.utils;
 
-import com.bix.exceptions.*;
+import bix.exceptions.*;
 
 import java.sql.Statement;
 import java.sql.ResultSet;
@@ -12,6 +12,9 @@ import java.sql.PreparedStatement;
 import java.util.ArrayList;
 import java.util.Locale;
 import java.util.Objects;
+
+// Path of the vault file in the Resource directory.
+import static bix.utils.Constants.VAULT_RESOURCE_PATH;
 
 /**
  * Class to communicate with the SQLite database "vault.db".
@@ -39,10 +42,7 @@ import java.util.Objects;
  * secret_hash is the SHA256 hash of the secret key (which is generated using thr master password and the salt)
  */
 
-final class VaultController {
-    // Variable to indicate whether initial setup is required.
-    private static final String VAULT_RESOURCE_PATH = "vault.db";
-
+public final class VaultController {
     /* Note:
      * To connect to an embedded database in a regular Java project the url would look like:
      * "jdbc:sqlite:path/to/vault.db"
@@ -59,7 +59,7 @@ final class VaultController {
     /**
      * Performs the initial vault setup. Used during initial Bix setup.
      */
-    static void setupVault() {
+    public static void setupVault() {
         // Clean up any junk data in the vault database.
         purgeVault();
 
@@ -95,7 +95,7 @@ final class VaultController {
      *
      * @return true if the vault.db file is accessible
      */
-    static boolean vaultExists() {
+    public static boolean vaultExists() {
         // Connect to the database.
         try (Connection conn = DriverManager.getConnection(URL)) {
             // If the connection is successful, a non-null value is returned.
@@ -114,7 +114,7 @@ final class VaultController {
      *
      * @return an int value
      */
-    static int getVaultSize() {
+    public static int getVaultSize() {
         int numberOfEntries;
 
         // Construct SQL statement to count entries in the "accounts" table.
@@ -174,7 +174,7 @@ final class VaultController {
         String createTableStmt = """
                 CREATE TABLE IF NOT EXISTS bix_metadata (
                 	id TEXT PRIMARY KEY,
-                	metadata_value TEXT NOT NULL
+                	metadata_value TEXT
                 );""";
 
         // Open connection.
@@ -188,8 +188,9 @@ final class VaultController {
 
         // Add the metadata fields with default values.
         addMetadata("setup_complete", "false");
-        addMetadata("master_password_hash", "null");
-        addMetadata("aes_flavor", "null");
+        addMetadata("master_password_hash", null);
+        addMetadata("aes_flavor", 256);
+        addMetadata("idle_session_timeout", 300);
         addMetadata("credential_display_duration", 30);
         addMetadata("failed_login_attempts", 0);
     }
@@ -199,7 +200,7 @@ final class VaultController {
      *
      * @param tableName the name of the table to delete from the database
      */
-    static void deleteTable(String tableName) {
+    public static void deleteTable(String tableName) {
         // Construct the SQL statement to delete a table if it exists.
         String deleteTableStmt = String.format("DROP TABLE IF EXISTS %s", tableName);
 
@@ -214,7 +215,7 @@ final class VaultController {
     /**
      * Get a list of all the tables in the database.
      */
-    static ArrayList<String> getTables() {
+    public static ArrayList<String> getTables() {
         // ArrayList to store the tables.
         ArrayList<String> tables = new ArrayList<>();
 
@@ -241,7 +242,7 @@ final class VaultController {
      *
      * @return an ArrayList containing the account names
      */
-    static ArrayList<String> getAccountNames() {
+    public static ArrayList<String> getAccountNames() {
         // Construct SQL statement to select all the account names from the accounts table.
         String selectAccNamesStmt = "SELECT account_name FROM accounts";
 
@@ -274,7 +275,7 @@ final class VaultController {
      *
      * @return a list containing account names
      */
-    static ArrayList<String> getAccountNamesContaining(String keyword) {
+    public static ArrayList<String> getAccountNamesContaining(String keyword) {
         // Convert the keyword to uppercase to perform a case-insensitive search.
         keyword = keyword.toUpperCase(Locale.ROOT);
 
@@ -313,7 +314,7 @@ final class VaultController {
      *
      * @return true if the account name exists in the vault
      */
-    static boolean accountExists(String accountName) {
+    public static boolean accountExists(String accountName) {
         return getAccountNames().contains(accountName);
     }
 
@@ -328,7 +329,7 @@ final class VaultController {
      * @param iv the initialization vector used for encrypting ciphertext
      * @param secretHash secret hash of the secret key
      */
-    static void addAccount(
+    public static void addAccount(
             String accountName, String associatedEmail, String ciphertextUsername, String ciphertextPassword,
             String salt, String iv, String secretHash)
             throws AccountAlreadyExistsException {
@@ -368,7 +369,7 @@ final class VaultController {
      *
      * @return a String[] containing the account information
      */
-    static String[] retrieveAccount(String accountName) throws AccountNotFoundException {
+    public static String[] retrieveAccount(String accountName) throws AccountNotFoundException {
         // Return null if the account does not exist in the vault.
         if (!accountExists(accountName))
             throw new AccountNotFoundException(accountName);
@@ -409,7 +410,7 @@ final class VaultController {
      * @param iv the new initialization vector used for encrypting ciphertext
      * @param secretHash the updated secret hash of the secret key
      */
-    static void updateAccount(
+    public static void updateAccount(
             String accountName, String associatedEmail, String ciphertextUsername, String ciphertextPassword,
             String salt, String iv, String secretHash)
             throws AccountNotFoundException {
@@ -454,7 +455,7 @@ final class VaultController {
      *
      * @param accountName name of the account to delete from the vault
      */
-    static void deleteAccount(String accountName) {
+    public static void deleteAccount(String accountName) {
         // Exit function if the account does not exist in the vault.
         if (!accountExists(accountName))
             return;
@@ -535,7 +536,7 @@ final class VaultController {
      *
      * @return a String metadata value
      */
-    static String getStrMetadata(String id) {
+    public static String getStrMetadata(String id) {
         // Construct the SQL select statement.
         String selectStmt = "SELECT value FROM bix_metadata WHERE id = ?";
 
@@ -562,7 +563,7 @@ final class VaultController {
      *
      * @return an integer metadata value
      */
-    static int getIntMetadata(String id) {
+    public static int getIntMetadata(String id) {
         // Construct the SQL select statement.
         String selectStmt = "SELECT value FROM bix_metadata WHERE id = ?";
 
@@ -588,7 +589,7 @@ final class VaultController {
      * @param id the id of the metadata
      * @param value the new metadata value
      */
-    static void updateMetadata(String id, String value) {
+    public static void updateMetadata(String id, String value) {
         // Construct SQL statement to update an entry.
         String updateStmt = "UPDATE bix_metadata SET value = ? WHERE id = ?";
 
@@ -613,7 +614,7 @@ final class VaultController {
      * @param id the id of the metadata
      * @param value the new metadata value
      */
-    static void updateMetadata(String id, int value) {
+    public static void updateMetadata(String id, int value) {
         // Construct SQL statement to update an entry.
         String updateStmt = "UPDATE bix_metadata SET value = ? WHERE id = ?";
 
@@ -641,7 +642,7 @@ final class VaultController {
      * This function is reserved for destroying the Bix vault at the user's request.
      * Unsurprisingly, this process is irreversible.
      */
-    static void purgeVault() {
+    public static void purgeVault() {
         // Delete tables.
         for (String table : getTables()) {
             deleteTable(table);
