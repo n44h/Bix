@@ -7,7 +7,7 @@ import java.util.Arrays;
 
 import static bix.utils.Utils.clearScreen;
 
-public class TransientPrinter {
+public final class TransientPrinter {
     private static final Scanner SCANNER = new Scanner(System.in);
 
     // DISPLAY_DURATION dictates how long to display the values
