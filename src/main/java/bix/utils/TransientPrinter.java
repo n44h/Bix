@@ -7,6 +7,9 @@ import java.util.Arrays;
 
 import static bix.utils.Utils.clearScreen;
 
+import static bix.utils.Constants.TIMED_DISPLAY_DURATION_LOWER_LIMIT;
+import static bix.utils.Constants.TIMED_DISPLAY_DURATION_UPPER_LIMIT;
+
 public final class TransientPrinter {
     private static final Scanner SCANNER = new Scanner(System.in);
 
@@ -49,11 +52,13 @@ public final class TransientPrinter {
     /**
      * TransientPrinter constructor.
      *
-     * @param displayDuration duration the output should be displayed before clearing the terminal
+     * @param displayDuration duration the output should be displayed
      */
     public TransientPrinter(int displayDuration) {
-        // Display duration should be between 1 and 600 seconds (inclusive bounds).
-        DISPLAY_DURATION = Math.min(Math.max(displayDuration, 1), 10 * 60);
+        // Ensure that the new Display Duration is within the upper and lower limits.
+        DISPLAY_DURATION = Math.min(
+                TIMED_DISPLAY_DURATION_UPPER_LIMIT,
+                Math.max(TIMED_DISPLAY_DURATION_LOWER_LIMIT, displayDuration));
 
         // Initialize to false, set to true when either of the task execution conditions are triggered.
         CLEAR_SCREEN_TASK_COMPLETED = false;
