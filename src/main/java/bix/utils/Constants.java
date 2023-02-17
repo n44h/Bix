@@ -1,6 +1,6 @@
 package bix.utils;
 
-public class Constants {
+public final class Constants {
     private Constants() {} // Enforce non-instantiability for this class.
 
     public static final String CIPHER_ALGORITHM = "AES/CBC/PKCS5PADDING";
