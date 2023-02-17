@@ -2,7 +2,7 @@ package bix.utils;
 
 import java.util.Arrays;
 
-public class Utils {
+public final class Utils {
     private Utils(){} // Enforce non-instantiability of this class.
 
     /**
