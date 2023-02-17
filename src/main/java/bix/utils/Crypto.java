@@ -108,13 +108,13 @@ public final class Crypto {
     /**
      * Encrypts plaintext using AES algorithm
      *
+     * @param masterPassword the masterPassword, along with a randomly generated salt, will be used to generate the
+     *                       secret key for encrypting the plaintext
      * @param plaintext the String to be encrypted
-     * @param password the password, along with a randomly generated salt, will be used to generate the secret key
-     *                 for encrypting the plaintext
      *
      * @return a String[] containing [CIPHERTEXT (base64), SALT (base64), IV (base64), SECRET_KEY_HASH]
      */
-    public String[] encrypt(char[] plaintext, char[] password) {
+    public String[] encrypt(char[] masterPassword, char[] plaintext) {
         try{
             // Generate random salt.
             var salt = generateRandomSalt();
@@ -123,7 +123,7 @@ public final class Crypto {
             var iv = generateRandomIV();
 
             // Generate secret key.
-            var secretKey = getSecretKey(password, salt);
+            var secretKey = getSecretKey(masterPassword, salt);
 
             // Initializing cipher for AES in CBC mode using PKCS5 padding.
             var cipher = Cipher.getInstance(CIPHER_ALGORITHM, "BC");
@@ -153,17 +153,17 @@ public final class Crypto {
     /**
      * Decrypts the AES-encrypted ciphertext
      *
+     * @param masterPassword the master password
      * @param ciphertext the ciphertext to decrypt
-     * @param password the master password
      * @param salt salt used during encryption
      * @param iv initialization vector used during encryption
      *
      * @return the decrypted plaintext as a String
      */
-    public char[] decrypt(char[] password, String ciphertext, String salt, String iv) {
+    public char[] decrypt(char[] masterPassword, String ciphertext, String salt, String iv) {
 
         // Generate secret key object.
-        var secretKey = getSecretKey(password, decode(salt));
+        var secretKey = getSecretKey(masterPassword, decode(salt));
 
         // Initialize IvParameterSpec object.
         var ivSpec = new IvParameterSpec(decode(iv));
@@ -214,19 +214,19 @@ public final class Crypto {
     /**
      * Generates the Secret Key
      *
-     * @param password the master password
+     * @param masterPassword the master password
      * @param salt randomly generated salt
      *
      * @return {@code SecretKey} object
      */
-    private SecretKey getSecretKey(char[] password, byte[] salt) {
+    private SecretKey getSecretKey(char[] masterPassword, byte[] salt) {
         SecretKey secretKey;
         try {
             // Create an instance of SecretKeyFactory with Password-Based Key Derivation Function 2 (PBKDF2).
             SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256", "BC");
 
             // Create a Key Specifications object.
-            KeySpec spec = new PBEKeySpec(password, salt, 65536, AES_FLAVOR);
+            KeySpec spec = new PBEKeySpec(masterPassword, salt, 65536, AES_FLAVOR);
 
             // Generate the secret key
             secretKey = new SecretKeySpec(factory.generateSecret(spec).getEncoded(), "AES");
