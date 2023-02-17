@@ -150,4 +150,8 @@ public final class Constants {
     public static final int IDLE_TIMEOUT_DURATION_LOWER_LIMIT = 10;
     public static final int IDLE_TIMEOUT_DURATION_UPPER_LIMIT = 10 * 60;
 
+    // Lower and Upper limits for the Timed Display Duration.
+    public static final int TIMED_DISPLAY_DURATION_LOWER_LIMIT = 1;
+    public static final int TIMED_DISPLAY_DURATION_UPPER_LIMIT = 10 * 60;
+
 } // class Constants
