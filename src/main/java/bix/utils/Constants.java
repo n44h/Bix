@@ -69,6 +69,7 @@ public final class Constants {
             
             """;
 
+    // Helpful descriptions for Bix actions.
     public static final String HELP_STRING = """
             Bix Help
             
@@ -114,6 +115,7 @@ public final class Constants {
             
             """;
 
+    // Helpful descriptions for choosing an AES flavor during setup.
     public static final String AES_FLAVOR_HELP_STRING = """
             Pick an AES flavor. Bix will use this flavor of AES when encrypting credentials.
             
@@ -131,15 +133,21 @@ public final class Constants {
             [3] AES-256 (default)
             """;
 
+    // Warning message that is printed when purging the vault.
+    public static final String PURGE_VAULT_WARNING_MSG = """
+            WARNING: All the saved accounts from the Bix vault will be permanently deleted.
+                     This action is irreversible. Please be sure before proceeding.
+            """;
+
+    // Warning message that is printed when resetting Bix.
     public static final String RESET_BIX_WARNING_MSG = """
             WARNING: All the saved accounts from the Bix vault will be permanently deleted.
                      The Bix master password will be removed.
                      This action is irreversible. Please be sure before proceeding.
             """;
 
-    public static final String PURGE_VAULT_WARNING_MSG = """
-            WARNING: All the saved accounts from the Bix vault will be permanently deleted.
-                     This action is irreversible. Please be sure before proceeding.
-            """;
+    // Lower and Upper limits for the Idle Session Timeout Duration.
+    public static final int IDLE_TIMEOUT_DURATION_LOWER_LIMIT = 10;
+    public static final int IDLE_TIMEOUT_DURATION_UPPER_LIMIT = 10 * 60;
 
 } // class Constants
