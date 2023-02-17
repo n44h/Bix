@@ -3,6 +3,7 @@ package bix.utils;
 public final class Constants {
     private Constants() {} // Enforce non-instantiability for this class.
 
+    // Cipher Algorithm: AES in CBC mode with PKCS5 padding.
     public static final String CIPHER_ALGORITHM = "AES/CBC/PKCS5PADDING";
 
     // Resource path to config file.
@@ -149,9 +150,15 @@ public final class Constants {
     // Lower and Upper limits for the Idle Session Timeout Duration.
     public static final int IDLE_TIMEOUT_DURATION_LOWER_LIMIT = 10;
     public static final int IDLE_TIMEOUT_DURATION_UPPER_LIMIT = 10 * 60;
+    public static final String SET_TIMEOUT_DURATION_MSG = String.format("""
+            Idle Session Timeout Duration must be >= %d seconds and <= %d seconds.
+            """, IDLE_TIMEOUT_DURATION_LOWER_LIMIT, IDLE_TIMEOUT_DURATION_UPPER_LIMIT);
 
     // Lower and Upper limits for the Timed Display Duration.
     public static final int TIMED_DISPLAY_DURATION_LOWER_LIMIT = 1;
     public static final int TIMED_DISPLAY_DURATION_UPPER_LIMIT = 10 * 60;
+    public static final String SET_DISPLAY_DURATION_MSG = String.format("""
+            Credential Display Duration must be >= %d seconds and <= %d seconds.
+            """, TIMED_DISPLAY_DURATION_LOWER_LIMIT, TIMED_DISPLAY_DURATION_UPPER_LIMIT);
 
 } // class Constants
