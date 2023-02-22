@@ -76,7 +76,7 @@ public final class Constants {
             
             - Account Actions:
             
-            \t[0] Display Stored Accounts - Prints the names of all the stored accounts
+            \t[0] View Saved Accounts - Prints the names of all the stored accounts
             
             \t[1] Retrieve Account - Retrieve a stored account's credentials
             
@@ -147,6 +147,12 @@ public final class Constants {
                      This action is irreversible. Please be sure before proceeding.
             """;
 
+    // Informational message for password input.
+    public static final String PASSWORD_INPUT_MSG = """
+            NOTE: The password inputs will not be visible on the screen as you type.
+                  Your keyboard inputs will be directly registered by Bix.
+            """;
+
     // Lower and Upper limits for the Idle Session Timeout Duration.
     public static final int IDLE_TIMEOUT_DURATION_LOWER_LIMIT = 10;
     public static final int IDLE_TIMEOUT_DURATION_UPPER_LIMIT = 10 * 60;
@@ -160,5 +166,9 @@ public final class Constants {
     public static final String SET_DISPLAY_DURATION_MSG = String.format("""
             Credential Display Duration must be >= %d seconds and <= %d seconds.
             """, TIMED_DISPLAY_DURATION_LOWER_LIMIT, TIMED_DISPLAY_DURATION_UPPER_LIMIT);
+
+    // Regex for validating email addresses.
+    public static final String EMAIL_VALIDATION_REGEX =
+            "^[\\\\w!#$%&’*+/=?`{|}~^-]+(?:\\\\.[\\\\w!#$%&’*+/=?`{|}~^-]+)*@(?:[a-zA-Z0-9-]+\\\\.)+[a-zA-Z]{2,6}$";
 
 } // class Constants
